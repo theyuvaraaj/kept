@@ -28,6 +28,15 @@
           "icon": "./assets/adaptive-icon.png",
           "color": "#8fae5e"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Kept uses your location to confirm you're at your spot when you check in.",
+          "locationAlwaysAndWhenInUsePermission": "Kept uses your location to auto-check-in when you arrive at your spot during the window.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
       ]
     ],
     "ios": {

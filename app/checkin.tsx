@@ -1,24 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Animated, Easing, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Screen } from '@/components/Screen';
 import { Txt, Button, BackButton, Neo } from '@/components/ui';
-import { Check, Flame } from '@/components/icons';
-import { colors, fonts, radius } from '@/theme/tokens';
+import { Check, Flame, XMark } from '@/components/icons';
+import { colors, fonts } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { streakOf } from '@/lib/analytics';
+import { distanceM } from '@/lib/geo';
 
-const LOCATE_MS = 1700;
+type Phase = 'locating' | 'success' | 'fail';
 
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const habit = useStore((s) => s.getHabit(id));
   const setDay = useStore((s) => s.setDay);
-  const [phase, setPhase] = useState<'locating' | 'success'>('locating');
+
+  const [phase, setPhase] = useState<Phase>('locating');
+  const [distTxt, setDistTxt] = useState('');
+  const [failTitle, setFailTitle] = useState('');
+  const [failMsg, setFailMsg] = useState('');
 
   const spin = useRef(new Animated.Value(0)).current;
   const ripple = useRef(new Animated.Value(0)).current;
+
+  const locate = useCallback(async () => {
+    setPhase('locating');
+    if (!habit) return;
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') {
+        setFailTitle('Location needed');
+        setFailMsg("Allow location access so Kept can confirm you're at your spot.");
+        setPhase('fail');
+        return;
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const d = distanceM(pos.coords.latitude, pos.coords.longitude, habit.place.lat, habit.place.lng);
+      const radius = habit.radius || 100;
+      if (d <= radius) {
+        setDay(habit.id, 'green');
+        setDistTxt(`${Math.round(d)} m from your spot`);
+        setPhase('success');
+      } else {
+        setFailTitle('Not at your spot');
+        const away = d > 1000 ? `${(d / 1000).toFixed(1)} km` : `${Math.round(d)} m`;
+        setFailMsg(`You're ${away} away. Get within ${radius} m of ${habit.place.name} and try again.`);
+        setPhase('fail');
+      }
+    } catch {
+      setFailTitle('Location error');
+      setFailMsg('Could not read your location. Check GPS / permissions and try again.');
+      setPhase('fail');
+    }
+  }, [habit, setDay]);
 
   useEffect(() => {
     Animated.loop(
@@ -27,15 +64,8 @@ export default function CheckIn() {
     Animated.loop(
       Animated.timing(ripple, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: true })
     ).start();
-
-    // v1: no real GPS. Auto-succeed after a beat (people only tap CHECK IN
-    // NOW when they're actually at the spot). Real geofence check is v2.
-    const t = setTimeout(() => {
-      if (id) setDay(id, 'green');
-      setPhase('success');
-    }, LOCATE_MS);
-    return () => clearTimeout(t);
-  }, [id]);
+    locate();
+  }, [locate]);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const rScale = ripple.interpolate({ inputRange: [0, 1], outputRange: [0.6, 2.4] });
@@ -49,7 +79,7 @@ export default function CheckIn() {
       <BackButton onPress={() => router.replace(`/habit/${id}`)} />
 
       <View style={styles.center}>
-        {phase === 'locating' ? (
+        {phase === 'locating' && (
           <>
             <View style={styles.locateWrap}>
               <Animated.View style={[styles.ripple, { transform: [{ scale: rScale }], opacity: rOpacity }]} />
@@ -58,11 +88,15 @@ export default function CheckIn() {
             <Txt variant="title" style={{ fontSize: 22 }}>
               Finding you…
             </Txt>
-            <Txt style={styles.sub}>Checking if you're at {placeName}</Txt>
+            <Txt style={styles.sub}>
+              Checking if you're within {habit?.radius ?? 100} m of {placeName}
+            </Txt>
           </>
-        ) : (
+        )}
+
+        {phase === 'success' && (
           <>
-            <Neo bg={colors.green} r={36} offset={7} style={styles.successBadge}>
+            <Neo bg={colors.green} r={36} offset={7} style={styles.badge}>
               <Check size={66} width={3.2} />
             </Neo>
             <Txt variant="title" style={{ fontSize: 29, textAlign: 'center' }}>
@@ -75,11 +109,21 @@ export default function CheckIn() {
               </Txt>
               <Flame size={19} color="#d1602f" />
             </View>
-            <Button
-              label="SEE MY STREAK"
-              onPress={() => router.replace(`/habit/${id}`)}
-              style={styles.seeBtn}
-            />
+            <Txt style={styles.dist}>{distTxt}</Txt>
+            <Button label="SEE MY STREAK" onPress={() => router.replace(`/habit/${id}`)} style={styles.cta} />
+          </>
+        )}
+
+        {phase === 'fail' && (
+          <>
+            <Neo bg={colors.red} r={36} offset={7} style={styles.badge}>
+              <XMark size={60} color={colors.surface} width={3} />
+            </Neo>
+            <Txt variant="title" style={{ fontSize: 26, textAlign: 'center' }}>
+              {failTitle}
+            </Txt>
+            <Txt style={styles.failMsg}>{failMsg}</Txt>
+            <Button label="TRY AGAIN" variant="light" onPress={locate} style={styles.cta} />
           </>
         )}
       </View>
@@ -91,27 +135,15 @@ const styles = StyleSheet.create({
   wrap: { paddingTop: 8 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   locateWrap: { width: 150, height: 150, alignItems: 'center', justifyContent: 'center', marginBottom: 26 },
-  ripple: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 3,
-    borderColor: colors.green,
-  },
-  spinner: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 4,
-    borderColor: colors.ink,
-    borderTopColor: colors.green,
-  },
+  ripple: { position: 'absolute', width: 150, height: 150, borderRadius: 75, borderWidth: 3, borderColor: colors.green },
+  spinner: { width: 70, height: 70, borderRadius: 35, borderWidth: 4, borderColor: colors.ink, borderTopColor: colors.green },
   sub: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted2, marginTop: 8, textAlign: 'center', maxWidth: 220 },
-  successBadge: { width: 130, height: 130, alignItems: 'center', justifyContent: 'center', marginBottom: 26 },
+  badge: { width: 130, height: 130, alignItems: 'center', justifyContent: 'center', marginBottom: 26 },
   congrats: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.greenDark, marginTop: 10, textAlign: 'center' },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   streakText: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted2 },
   streakBold: { fontFamily: fonts.bodyBold, color: colors.ink },
-  seeBtn: { marginTop: 28, width: 'auto', paddingHorizontal: 40 },
+  dist: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, marginTop: 4 },
+  failMsg: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted2, marginTop: 10, textAlign: 'center', maxWidth: 240, lineHeight: 19 },
+  cta: { marginTop: 28, width: 'auto', paddingHorizontal: 40 },
 });

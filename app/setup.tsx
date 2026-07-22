@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View, Pressable, StyleSheet, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Screen } from '@/components/Screen';
 import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
 import { ArrowRight, Check, Pin } from '@/components/icons';
@@ -39,8 +40,32 @@ export default function Setup() {
     return PLACES.filter((p) => p.name.toLowerCase().includes(q) || p.sub.toLowerCase().includes(q)).slice(0, 4);
   }, [placeQuery]);
 
+  const [locating, setLocating] = useState(false);
+
   function toggleDay(i: number) {
     setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
+  }
+
+  async function useCurrentLocation() {
+    setLocating(true);
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') return;
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      let label = 'Current location';
+      try {
+        const g = await Location.reverseGeocodeAsync({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+        if (g[0]) label = g[0].name || g[0].street || g[0].city || label;
+      } catch {}
+      setPlace({ name: label, lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setPlaceQuery(label);
+      setShowPlaces(false);
+    } finally {
+      setLocating(false);
+    }
   }
 
   function save() {
@@ -97,6 +122,10 @@ export default function Setup() {
         }}
         placeholder="Search a place…"
       />
+      <Pressable onPress={useCurrentLocation} style={styles.useLoc}>
+        <Pin size={15} color={colors.greenDark} width={2.4} />
+        <Txt style={styles.useLocText}>{locating ? 'Getting location…' : 'Use my current location'}</Txt>
+      </Pressable>
       {showPlaces && placeResults.length > 0 && (
         <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.results}>
           {placeResults.map((p, i) => (
@@ -258,6 +287,8 @@ function Label({ children }: { children: string }) {
 }
 
 const styles = StyleSheet.create({
+  useLoc: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start' },
+  useLocText: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: colors.greenDark },
   results: { marginTop: 8, overflow: 'hidden' },
   result: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 14 },
   resultDivider: { borderTopWidth: 1.5, borderTopColor: '#ece8da' },
