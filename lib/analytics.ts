@@ -128,6 +128,14 @@ function scheduledKeptInRange(habit: Habit, from: Date, to: Date): number {
   return n;
 }
 
+// Whole calendar days between two dates, DST-safe (anchored at UTC midnight so
+// a 23h/25h DST day never miscounts). See notes.txt #13.
+function daysBetween(a: Date, b: Date): number {
+  const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((ub - ua) / 86400000);
+}
+
 function firstDate(habit: Habit): Date {
   const keys = Object.keys(habit.history || {});
   if (!keys.length) return midnight(new Date());
@@ -144,10 +152,7 @@ function firstDate(habit: Habit): Date {
 export function keptPct(habit: Habit): number {
   if ((habit.scheduleType || 'specific') === 'count') {
     const wins = winsOf(habit);
-    const days = Math.max(
-      1,
-      Math.round((midnight(new Date()).getTime() - firstDate(habit).getTime()) / 86400000) + 1
-    );
+    const days = Math.max(1, daysBetween(firstDate(habit), new Date()) + 1);
     const weeks = Math.max(1, Math.ceil(days / 7));
     const denom = (habit.weeklyTarget || 4) * weeks;
     return denom ? Math.min(100, Math.round((wins / denom) * 100)) : 0;
@@ -168,9 +173,11 @@ export function keptPct(habit: Habit): number {
 export function weekStats(habit: Habit): { done: number; target: number } {
   const today = new Date();
   const ws = startOfWeek(today);
-  const done = greensInRange(habit, ws, today);
+  const count = (habit.scheduleType || 'specific') === 'count';
+  // specific: count only scheduled greens so done never exceeds target (#15)
+  const done = count ? greensInRange(habit, ws, today) : scheduledKeptInRange(habit, ws, today);
   let target: number;
-  if ((habit.scheduleType || 'specific') === 'count') {
+  if (count) {
     target = habit.weeklyTarget || 4;
   } else {
     const we = new Date(ws);
@@ -183,9 +190,10 @@ export function weekStats(habit: Habit): { done: number; target: number } {
 export function monthStats(habit: Habit): { done: number; target: number } {
   const today = new Date();
   const first = new Date(today.getFullYear(), today.getMonth(), 1);
-  const done = greensInRange(habit, first, today);
+  const count = (habit.scheduleType || 'specific') === 'count';
+  const done = count ? greensInRange(habit, first, today) : scheduledKeptInRange(habit, first, today);
   let target: number;
-  if ((habit.scheduleType || 'specific') === 'count') {
+  if (count) {
     const weeks = Math.ceil(today.getDate() / 7);
     target = (habit.weeklyTarget || 4) * weeks;
   } else {
