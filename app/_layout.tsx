@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -45,6 +46,15 @@ export default function RootLayout() {
   useEffect(() => {
     if (hydrated) syncAutoCheck(habits).catch(() => {});
   }, [hydrated, habits]);
+
+  // The background task writes storage from a separate context. Re-read it when
+  // the app returns to foreground so auto check-ins show up live.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') useStore.persist.rehydrate();
+    });
+    return () => sub.remove();
+  }, []);
 
   if (!ready) return null;
 
