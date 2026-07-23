@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Redirect } from 'expo-router';
 import * as Location from 'expo-location';
 import { Screen } from '@/components/Screen';
 import { Txt, Neo, Button } from '@/components/ui';
@@ -90,14 +90,7 @@ export default function Dashboard() {
     })();
   }, [habit, setDay]);
 
-  if (!habit) {
-    return (
-      <Screen>
-        <Txt variant="title">Habit not found</Txt>
-        <Button label="ALL HABITS" variant="light" onPress={() => router.replace('/home')} style={{ marginTop: 16 }} />
-      </Screen>
-    );
-  }
+  if (!habit) return <Redirect href="/home" />;
 
   const streak = streakOf(habit);
   const wins = winsOf(habit);

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { View, Pressable, StyleSheet, BackHandler, ToastAndroid, Platform } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Txt, Neo, Bar } from '@/components/ui';
 import { Chart, User, Search, Pin, Flame, Plus, Check } from '@/components/icons';
@@ -80,6 +80,26 @@ export default function Home() {
   const habits = useStore((s) => s.habits);
   const user = useStore((s) => s.user);
   const [q, setQ] = useState('');
+
+  // Home is the root: Android back asks to confirm exit instead of popping to
+  // a stale/empty route.
+  const lastBack = useRef(0);
+  useFocusEffect(
+    useCallback(() => {
+      const onBack = () => {
+        const now = Date.now();
+        if (now - lastBack.current < 2000) {
+          BackHandler.exitApp();
+          return true;
+        }
+        lastBack.current = now;
+        if (Platform.OS === 'android') ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+        return true;
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
+      return () => sub.remove();
+    }, [])
+  );
 
   const active = useMemo(() => habits.filter((h) => !h.archived), [habits]);
   const filtered = useMemo(() => {
