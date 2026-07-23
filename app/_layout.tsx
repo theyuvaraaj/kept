@@ -15,7 +15,7 @@ import {
 import { colors } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { syncReminders } from '@/lib/notifications';
-import { registerGeofences } from '@/lib/geofence'; // also registers the background task
+import { syncAutoCheck } from '@/lib/geofence'; // also registers the background task
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,9 +41,9 @@ export default function RootLayout() {
     if (hydrated) syncReminders(habits, remindersEnabled).catch(() => {});
   }, [hydrated, habits, remindersEnabled]);
 
-  // Register geofences for auto-check habits (no-op / safe in Expo Go).
+  // Start/stop the background auto check-in watcher (safe no-op in Expo Go).
   useEffect(() => {
-    if (hydrated) registerGeofences(habits).catch(() => {});
+    if (hydrated) syncAutoCheck(habits).catch(() => {});
   }, [hydrated, habits]);
 
   if (!ready) return null;

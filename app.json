@@ -43,7 +43,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.theyuvaraaj.kept",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["location"]
       }
     },
     "android": {

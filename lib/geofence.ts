@@ -1,7 +1,7 @@
-// Background geofencing for auto check-in. Requires a dev/EAS build (NOT Expo Go).
-// A region enter during the habit's window marks today kept — even if the app
-// is backgrounded. The task runs in its own JS context, so it reads/writes the
-// persisted store (AsyncStorage) directly rather than touching the live store.
+// Background auto check-in. Requires a dev/EAS build (NOT Expo Go) + "Allow all
+// the time" location. A periodic background location task checks "am I at a
+// spot during its window?" — so it works whether you just arrived OR are already
+// parked there, with the app closed. Battery cost is why this is opt-in per habit.
 
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
@@ -9,8 +9,9 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Habit } from './types';
 import { todayKey } from './analytics';
+import { distanceM } from './geo';
 
-export const GEOFENCE_TASK = 'kept-geofence';
+export const LOCATION_TASK = 'kept-location-watch';
 const STORE_KEY = 'kept-v1';
 
 function inWindow(h: Habit): boolean {
@@ -24,43 +25,51 @@ function inWindow(h: Habit): boolean {
   return cur >= p(h.start) && cur <= p(h.end);
 }
 
-async function markKept(habitId: string) {
+/** Given a fix, mark every auto habit you're currently at (during its window). */
+async function checkPosition(lat: number, lng: number) {
   const raw = await AsyncStorage.getItem(STORE_KEY);
   if (!raw) return;
   const parsed = JSON.parse(raw);
   const habits: Habit[] = parsed?.state?.habits ?? [];
-  const h = habits.find((x) => x.id === habitId);
-  if (!h) return;
   const key = todayKey();
-  if (h.history?.[key] === 'green' || h.history?.[key] === 'red') return; // already resolved
-  if (!inWindow(h)) return; // only auto-check during the window
+  const marked: Habit[] = [];
 
-  h.history = { ...h.history, [key]: 'green' };
-  await AsyncStorage.setItem(STORE_KEY, JSON.stringify(parsed));
+  for (const h of habits) {
+    if (!h.autoCheck || h.archived) continue;
+    const st = h.history?.[key];
+    if (st === 'green' || st === 'red') continue;
+    if (!inWindow(h)) continue;
+    if (distanceM(lat, lng, h.place.lat, h.place.lng) <= (h.radius || 100)) {
+      h.history = { ...h.history, [key]: 'green' };
+      marked.push(h);
+    }
+  }
 
-  await Notifications.scheduleNotificationAsync({
-    content: { title: 'Kept ✓', body: `Auto-checked in at ${h.place.name}. Streak safe.` },
-    trigger: null,
-  }).catch(() => {});
+  if (marked.length) {
+    await AsyncStorage.setItem(STORE_KEY, JSON.stringify(parsed));
+    for (const h of marked) {
+      await Notifications.scheduleNotificationAsync({
+        content: { title: 'Kept ✓', body: `Auto-checked in at ${h.place.name}. Streak safe.` },
+        trigger: null,
+      }).catch(() => {});
+    }
+  }
 }
 
-// Must be defined at module top-level (import this file early — see _layout).
-TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }: any) => {
+// Top-level task definition (import this file early — see _layout).
+TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (error) return;
-  if (data?.eventType === Location.GeofencingEventType.Enter && data?.region?.identifier) {
-    await markKept(data.region.identifier).catch(() => {});
-  }
+  const loc = data?.locations?.[data.locations.length - 1];
+  if (loc?.coords) await checkPosition(loc.coords.latitude, loc.coords.longitude).catch(() => {});
 });
 
-/** Ask permissions once, then register/refresh geofences for auto-check habits. */
-export async function registerGeofences(habits: Habit[]): Promise<'ok' | 'denied' | 'none'> {
+/** Start/stop the background watcher based on whether any auto habit exists. */
+export async function syncAutoCheck(habits: Habit[]): Promise<'ok' | 'denied' | 'none'> {
   const active = habits.filter((h) => h.autoCheck && !h.archived);
-  const stop = async () => {
-    const started = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false);
-    if (started) await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
-  };
+  const started = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
+
   if (active.length === 0) {
-    await stop();
+    if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
     return 'none';
   }
 
@@ -69,16 +78,25 @@ export async function registerGeofences(habits: Habit[]): Promise<'ok' | 'denied
   const bg = await Location.requestBackgroundPermissionsAsync();
   if (bg.status !== 'granted') return 'denied';
 
-  const regions = active.map((h) => ({
-    identifier: h.id,
-    latitude: h.place.lat,
-    longitude: h.place.lng,
-    radius: Math.max(h.radius || 100, 50),
-    notifyOnEnter: true,
-    notifyOnExit: false,
-  }));
+  // Check right now too (covers "already parked" the moment auto-check is on).
+  try {
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    await checkPosition(pos.coords.latitude, pos.coords.longitude);
+  } catch {}
 
-  await stop();
-  await Location.startGeofencingAsync(GEOFENCE_TASK, regions);
+  if (!started) {
+    await Location.startLocationUpdatesAsync(LOCATION_TASK, {
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 120000, // ~2 min
+      distanceInterval: 0,
+      pausesUpdatesAutomatically: false,
+      showsBackgroundLocationIndicator: false,
+      foregroundService: {
+        notificationTitle: 'Kept is watching your spots',
+        notificationBody: 'Auto check-in is on for your habits.',
+        notificationColor: '#8fae5e',
+      },
+    });
+  }
   return 'ok';
 }
