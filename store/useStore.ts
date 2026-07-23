@@ -39,6 +39,8 @@ interface KeptState {
   setHasHydrated: (v: boolean) => void;
   /** Re-read habits from storage (picks up background auto check-ins). */
   refreshFromStorage: () => Promise<void>;
+  autoStatus: string;
+  setAutoStatus: (s: string) => void;
 }
 
 const STORAGE_KEY = 'kept-v1';
@@ -55,6 +57,7 @@ export const useStore = create<KeptState>()(
       onboarded: false,
       remindersEnabled: true,
       hasHydrated: false,
+      autoStatus: 'not started',
 
       getHabit: (id) => get().habits.find((h) => h.id === id),
 
@@ -97,6 +100,7 @@ export const useStore = create<KeptState>()(
       setOnboarded: (v) => set({ onboarded: v }),
       setRemindersEnabled: (v) => set({ remindersEnabled: v }),
       setHasHydrated: (v) => set({ hasHydrated: v }),
+      setAutoStatus: (s) => set({ autoStatus: s }),
       refreshFromStorage: async () => {
         try {
           const raw = await AsyncStorage.getItem(STORAGE_KEY);

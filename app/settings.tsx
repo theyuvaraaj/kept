@@ -10,6 +10,7 @@ export default function Settings() {
   const router = useRouter();
   const remindersEnabled = useStore((s) => s.remindersEnabled);
   const setRemindersEnabled = useStore((s) => s.setRemindersEnabled);
+  const autoStatus = useStore((s) => s.autoStatus);
 
   function resetData() {
     Alert.alert('Reset all data?', 'Deletes every habit and its history. Cannot be undone.', [
@@ -48,6 +49,11 @@ export default function Settings() {
         >
           <View style={styles.knob} />
         </Pressable>
+      </Neo>
+
+      <Neo r={radius.md} offset={0} borderWidth={2.5} style={[styles.infoCard, { marginTop: 10 }]}>
+        <Txt style={styles.rowTitle}>Background check-in</Txt>
+        <Txt style={styles.rowDesc}>Status: {autoStatus}</Txt>
       </Neo>
 
       <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>

@@ -86,7 +86,10 @@ export default function RootLayout() {
 
   // Start/stop the background auto check-in watcher (safe no-op in Expo Go).
   useEffect(() => {
-    if (hydrated) syncAutoCheck(habits).catch(() => {});
+    if (!hydrated) return;
+    syncAutoCheck(habits)
+      .then((status) => useStore.getState().setAutoStatus(status))
+      .catch((e) => useStore.getState().setAutoStatus(`error: ${e?.message ?? e}`));
   }, [hydrated, habits]);
 
   // Live auto check-in while the app is open (marks via the store → UI updates

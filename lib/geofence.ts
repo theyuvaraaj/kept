@@ -63,20 +63,20 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (loc?.coords) await checkPosition(loc.coords.latitude, loc.coords.longitude).catch(() => {});
 });
 
-/** Start/stop the background watcher based on whether any auto habit exists. */
-export async function syncAutoCheck(habits: Habit[]): Promise<'ok' | 'denied' | 'none'> {
+/** Start/stop the background watcher. Returns a human status for Settings. */
+export async function syncAutoCheck(habits: Habit[]): Promise<string> {
   const active = habits.filter((h) => h.autoCheck && !h.archived);
   const started = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
 
   if (active.length === 0) {
     if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
-    return 'none';
+    return 'off — no auto-check habits';
   }
 
   const fg = await Location.requestForegroundPermissionsAsync();
-  if (fg.status !== 'granted') return 'denied';
+  if (fg.status !== 'granted') return `blocked — location "${fg.status}"`;
   const bg = await Location.requestBackgroundPermissionsAsync();
-  if (bg.status !== 'granted') return 'denied';
+  if (bg.status !== 'granted') return `blocked — need "Allow all the time" (got "${bg.status}")`;
 
   // Check right now too (covers "already parked" the moment auto-check is on).
   try {
@@ -84,7 +84,8 @@ export async function syncAutoCheck(habits: Habit[]): Promise<'ok' | 'denied' | 
     await checkPosition(pos.coords.latitude, pos.coords.longitude);
   } catch {}
 
-  if (!started) {
+  try {
+    if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
     await Location.startLocationUpdatesAsync(LOCATION_TASK, {
       accuracy: Location.Accuracy.Balanced,
       timeInterval: 120000, // ~2 min
@@ -97,6 +98,8 @@ export async function syncAutoCheck(habits: Habit[]): Promise<'ok' | 'denied' | 
         notificationColor: '#8fae5e',
       },
     });
+    return 'active — watching in background';
+  } catch (e: any) {
+    return `error starting service: ${e?.message ?? String(e)}`;
   }
-  return 'ok';
 }
