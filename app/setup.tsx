@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { View, Pressable, StyleSheet, TextInput } from 'react-native';
+import { View, Pressable, StyleSheet, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { requestBatteryExemption } from '@/lib/battery';
 import { Screen } from '@/components/Screen';
 import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
 import { ArrowRight, Check, Pin } from '@/components/icons';
@@ -44,6 +45,21 @@ export default function Setup() {
 
   function toggleDay(i: number) {
     setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
+  }
+
+  function toggleAuto() {
+    const next = !auto;
+    setAuto(next);
+    if (next) {
+      Alert.alert(
+        'Keep auto check-in reliable',
+        'So Kept can check you in while the app is closed, Android needs to let it run in the background. On the next screen choose “Allow” (don’t optimize).',
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Allow', onPress: () => requestBatteryExemption() },
+        ]
+      );
+    }
   }
 
   async function useCurrentLocation() {
@@ -236,7 +252,7 @@ export default function Setup() {
             Track my location automatically during the window and mark the day for me. Requires always-on location.
           </Txt>
         </View>
-        <Pressable onPress={() => setAuto((a) => !a)} style={[styles.switch, auto ? styles.switchOn : styles.switchOff]}>
+        <Pressable onPress={toggleAuto} style={[styles.switch, auto ? styles.switchOn : styles.switchOff]}>
           <View style={styles.knob} />
         </Pressable>
       </Neo>
