@@ -29,32 +29,45 @@ export default function CheckIn() {
   const locate = useCallback(async () => {
     setPhase('locating');
     if (!habit) return;
+    const t0 = Date.now();
+    let apply: () => void;
     try {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (perm.status !== 'granted') {
-        setFailTitle('Location needed');
-        setFailMsg("Allow location access so Kept can confirm you're at your spot.");
-        setPhase('fail');
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const d = distanceM(pos.coords.latitude, pos.coords.longitude, habit.place.lat, habit.place.lng);
-      const radius = habit.radius || 100;
-      if (d <= radius) {
-        setDay(habit.id, 'green');
-        setDistTxt(`${Math.round(d)} m from your spot`);
-        setPhase('success');
+        apply = () => {
+          setFailTitle('Location needed');
+          setFailMsg("Allow location access so Kept can confirm you're at your spot.");
+          setPhase('fail');
+        };
       } else {
-        setFailTitle('Not at your spot');
-        const away = d > 1000 ? `${(d / 1000).toFixed(1)} km` : `${Math.round(d)} m`;
-        setFailMsg(`You're ${away} away. Get within ${radius} m of ${habit.place.name} and try again.`);
-        setPhase('fail');
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const d = distanceM(pos.coords.latitude, pos.coords.longitude, habit.place.lat, habit.place.lng);
+        const radius = habit.radius || 100;
+        if (d <= radius) {
+          apply = () => {
+            setDay(habit.id, 'green');
+            setDistTxt(`${Math.round(d)} m from your spot`);
+            setPhase('success');
+          };
+        } else {
+          apply = () => {
+            setFailTitle('Not at your spot');
+            const away = d > 1000 ? `${(d / 1000).toFixed(1)} km` : `${Math.round(d)} m`;
+            setFailMsg(`You're ${away} away. Get within ${radius} m of ${habit.place.name} and try again.`);
+            setPhase('fail');
+          };
+        }
       }
     } catch {
-      setFailTitle('Location error');
-      setFailMsg('Could not read your location. Check GPS / permissions and try again.');
-      setPhase('fail');
+      apply = () => {
+        setFailTitle('Location error');
+        setFailMsg('Could not read your location. Check GPS / permissions and try again.');
+        setPhase('fail');
+      };
     }
+    // keep "Finding you…" on screen for a beat so it never flickers
+    const wait = Math.max(0, 850 - (Date.now() - t0));
+    setTimeout(apply, wait);
   }, [habit, setDay]);
 
   useEffect(() => {

@@ -73,7 +73,7 @@ export const useStore = create<KeptState>()(
           return editId;
         }
         const id = uid();
-        set((s) => ({ habits: [...s.habits, { id, ...base, history: {} }] }));
+        set((s) => ({ habits: [...s.habits, { id, ...base, createdAt: todayKey(), history: {} }] }));
         return id;
       },
 

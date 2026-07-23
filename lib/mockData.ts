@@ -24,6 +24,12 @@ function seedHistory(missBacks: number[]): Record<string, 'green' | 'red'> {
   return h;
 }
 
+function backKey(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return dateKey(d);
+}
+
 export function demoHabits(): Habit[] {
   return [
     {
@@ -38,6 +44,7 @@ export function demoHabits(): Habit[] {
       radius: 120,
       autoCheck: true,
       reminder: true,
+      createdAt: backKey(20),
       history: seedHistory([3, 9, 15]),
     },
     {
@@ -52,6 +59,7 @@ export function demoHabits(): Habit[] {
       radius: 100,
       autoCheck: false,
       reminder: true,
+      createdAt: backKey(20),
       history: seedHistory([2, 6, 11]),
     },
   ];

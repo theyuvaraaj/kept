@@ -1,9 +1,13 @@
+import { useEffect, useRef } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Screen } from '@/components/Screen';
 import { Txt, Neo, Button } from '@/components/ui';
 import { ArrowLeft, Gear, Flame, Check, XMark } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
+import { distanceM } from '@/lib/geo';
+import type { Habit } from '@/lib/types';
 import { useStore } from '@/store/useStore';
 import {
   streakOf,
@@ -19,6 +23,17 @@ import {
   todayKey,
   type CalendarCell,
 } from '@/lib/analytics';
+
+function inWindowNow(h: Habit): boolean {
+  if (!h.start || !h.end) return true;
+  const n = new Date();
+  const cur = n.getHours() * 60 + n.getMinutes();
+  const p = (t: string) => {
+    const [a, b] = t.split(':').map(Number);
+    return a * 60 + b;
+  };
+  return cur >= p(h.start) && cur <= p(h.end);
+}
 
 function Tile({ value, label, highlight }: { value: string; label: string; highlight?: boolean }) {
   return (
@@ -54,6 +69,26 @@ export default function Dashboard() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const habit = useStore((s) => s.getHabit(id));
+  const setDay = useStore((s) => s.setDay);
+  const autoTried = useRef(false);
+
+  // Auto check-in when you open the habit while already at the spot (geofencing
+  // only fires on arrival/crossing the radius, so being parked there won't).
+  useEffect(() => {
+    if (!habit || autoTried.current || !habit.autoCheck) return;
+    const st = (habit.history || {})[todayKey()];
+    if (st === 'green' || st === 'red' || !inWindowNow(habit)) return;
+    autoTried.current = true;
+    (async () => {
+      try {
+        const perm = await Location.getForegroundPermissionsAsync(); // don't prompt here
+        if (perm.status !== 'granted') return;
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const d = distanceM(pos.coords.latitude, pos.coords.longitude, habit.place.lat, habit.place.lng);
+        if (d <= (habit.radius || 100)) setDay(habit.id, 'green');
+      } catch {}
+    })();
+  }, [habit, setDay]);
 
   if (!habit) {
     return (

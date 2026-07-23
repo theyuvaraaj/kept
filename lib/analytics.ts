@@ -48,10 +48,12 @@ export function streakOf(habit: Habit): number {
 function dayStreak(habit: Habit): number {
   const h = habit.history || {};
   const today = midnight(new Date());
+  const start = habitStart(habit);
   let count = 0;
   let grace = GRACE_DAYS;
   const d = new Date(today);
   for (let i = 0; i < 730; i++) {
+    if (d.getTime() < start.getTime()) break; // don't count pre-creation days as misses
     if (isScheduled(habit, d)) {
       const st = h[dateKey(d)];
       const isToday = d.getTime() === today.getTime();
@@ -148,18 +150,31 @@ function firstDate(habit: Habit): Date {
   return midnight(min || new Date());
 }
 
+/** The day the habit started existing. Nothing before this counts as missed. */
+function habitStart(habit: Habit): Date {
+  if (habit.createdAt) {
+    const [y, m, d] = habit.createdAt.split('-').map(Number);
+    return midnight(new Date(y, m - 1, d));
+  }
+  return firstDate(habit);
+}
+
+function laterOf(a: Date, b: Date): Date {
+  return a.getTime() >= b.getTime() ? a : b;
+}
+
 /** Percentage of promises kept. Definition differs per schedule mode. */
 export function keptPct(habit: Habit): number {
   if ((habit.scheduleType || 'specific') === 'count') {
     const wins = winsOf(habit);
-    const days = Math.max(1, daysBetween(firstDate(habit), new Date()) + 1);
+    const days = Math.max(1, daysBetween(habitStart(habit), new Date()) + 1);
     const weeks = Math.max(1, Math.ceil(days / 7));
     const denom = (habit.weeklyTarget || 4) * weeks;
     return denom ? Math.min(100, Math.round((wins / denom) * 100)) : 0;
   }
   // Specific mode: kept scheduled days / scheduled days elapsed. Missed
   // scheduled days count against you (no need to write them as 'red').
-  const first = firstDate(habit);
+  const first = habitStart(habit);
   const today = midnight(new Date());
   const todayGreen = (habit.history || {})[todayKey()] === 'green';
   const end = new Date(today);
@@ -172,7 +187,7 @@ export function keptPct(habit: Habit): number {
 
 export function weekStats(habit: Habit): { done: number; target: number } {
   const today = new Date();
-  const ws = startOfWeek(today);
+  const ws = laterOf(startOfWeek(today), habitStart(habit)); // don't count pre-creation days
   const count = (habit.scheduleType || 'specific') === 'count';
   // specific: count only scheduled greens so done never exceeds target (#15)
   const done = count ? greensInRange(habit, ws, today) : scheduledKeptInRange(habit, ws, today);
@@ -180,21 +195,23 @@ export function weekStats(habit: Habit): { done: number; target: number } {
   if (count) {
     target = habit.weeklyTarget || 4;
   } else {
-    const we = new Date(ws);
+    const we = new Date(startOfWeek(today));
     we.setDate(we.getDate() + 6);
-    target = scheduledInRange(habit, ws, we);
+    target = scheduledInRange(habit, ws, we); // full week (from creation), scheduled days
   }
   return { done, target: Math.max(target, 0) };
 }
 
 export function monthStats(habit: Habit): { done: number; target: number } {
   const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthTop = new Date(today.getFullYear(), today.getMonth(), 1);
+  const first = laterOf(monthTop, habitStart(habit)); // count only from creation
   const count = (habit.scheduleType || 'specific') === 'count';
   const done = count ? greensInRange(habit, first, today) : scheduledKeptInRange(habit, first, today);
   let target: number;
   if (count) {
-    const weeks = Math.ceil(today.getDate() / 7);
+    const daysIn = daysBetween(first, today) + 1;
+    const weeks = Math.max(1, Math.ceil(daysIn / 7));
     target = (habit.weeklyTarget || 4) * weeks;
   } else {
     target = scheduledInRange(habit, first, today);
@@ -274,17 +291,25 @@ export function monthCells(habit: Habit): CalendarCell[] {
   const dim = new Date(y, m + 1, 0).getDate();
   const hist = habit.history || {};
   const specific = (habit.scheduleType || 'specific') !== 'count';
+  const start = habitStart(habit);
   const cells: CalendarCell[] = [];
   for (let i = 0; i < first; i++) cells.push({ n: 0, kind: 'blank' });
   for (let n = 1; n <= dim; n++) {
     const st = hist[`${y}-${m + 1}-${n}`];
-    const dow = new Date(y, m, n).getDay();
+    const day = midnight(new Date(y, m, n));
+    const dow = day.getDay();
     let kind: CalendarCell['kind'] = 'none';
     if (n === todayN) kind = 'today';
     else if (st === 'green') kind = 'green';
     else if (st === 'red') kind = 'red';
-    // past scheduled day with no check-in = missed
-    else if (n < todayN && specific && (habit.days || []).includes(dow)) kind = 'red';
+    // past scheduled day (on/after creation) with no check-in = missed
+    else if (
+      n < todayN &&
+      specific &&
+      day.getTime() >= start.getTime() &&
+      (habit.days || []).includes(dow)
+    )
+      kind = 'red';
     cells.push({ n, kind });
   }
   return cells;

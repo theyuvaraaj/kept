@@ -23,6 +23,8 @@ export interface Habit {
   autoCheck: boolean;
   /** Send a local reminder during the window. */
   reminder: boolean;
+  /** dateKey the habit was created — nothing before this counts as missed. */
+  createdAt?: string;
   /** Archived habits are hidden from Home + Stats but kept. */
   archived?: boolean;
   /** Map of dateKey -> status. */

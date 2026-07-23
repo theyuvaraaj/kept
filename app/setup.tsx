@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View, Pressable, StyleSheet, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -7,10 +7,15 @@ import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
 import { ArrowRight, Check, Pin } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
-import { PLACES } from '@/lib/mockData';
 import type { Place, ScheduleType } from '@/lib/types';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/** Format a time field as the user types: "1057" -> "10:57". */
+function maskTime(t: string): string {
+  const d = t.replace(/\D/g, '').slice(0, 4);
+  return d.length <= 2 ? d : `${d.slice(0, 2)}:${d.slice(2)}`;
+}
 
 export default function Setup() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -25,7 +30,6 @@ export default function Setup() {
   const [name, setName] = useState(existing?.name ?? '');
   const [placeQuery, setPlaceQuery] = useState(existing?.place.name ?? '');
   const [place, setPlace] = useState<Place | null>(existing?.place ?? null);
-  const [showPlaces, setShowPlaces] = useState(false);
   const [scheduleType, setScheduleType] = useState<ScheduleType>(existing?.scheduleType ?? 'specific');
   const [days, setDays] = useState<number[]>(existing?.days ?? [1, 2, 3, 4, 5]);
   const [weeklyTarget, setWeeklyTarget] = useState(existing?.weeklyTarget ?? 4);
@@ -35,12 +39,8 @@ export default function Setup() {
   const [auto, setAuto] = useState(existing?.autoCheck ?? false);
   const [reminder, setReminder] = useState(existing?.reminder ?? true);
 
-  const placeResults = useMemo(() => {
-    const q = placeQuery.trim().toLowerCase();
-    return PLACES.filter((p) => p.name.toLowerCase().includes(q) || p.sub.toLowerCase().includes(q)).slice(0, 4);
-  }, [placeQuery]);
-
   const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState<string | null>(null);
 
   function toggleDay(i: number) {
     setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
@@ -61,18 +61,23 @@ export default function Setup() {
         if (g[0]) label = g[0].name || g[0].street || g[0].city || label;
       } catch {}
       setPlace({ name: label, lat: pos.coords.latitude, lng: pos.coords.longitude });
-      setPlaceQuery(label);
-      setShowPlaces(false);
+      if (!placeQuery.trim()) setPlaceQuery(label);
+      setLocError(null);
     } finally {
       setLocating(false);
     }
   }
 
   function save() {
+    if (!place) {
+      setLocError('Set the spot — tap "Use my current location".');
+      return;
+    }
+    const finalPlace = { name: placeQuery.trim() || place.name, lat: place.lat, lng: place.lng };
     const newId = saveHabit(
       {
         name,
-        place,
+        place: finalPlace,
         scheduleType,
         days,
         weeklyTarget,
@@ -115,48 +120,27 @@ export default function Setup() {
       <Label>LOCATION</Label>
       <Field
         value={placeQuery}
-        onChangeText={(t) => {
-          setPlaceQuery(t);
-          setShowPlaces(t.trim().length > 0);
-          setPlace(null);
-        }}
-        placeholder="Search a place…"
+        onChangeText={setPlaceQuery}
+        placeholder="Name this spot (e.g. Gold's Gym)"
       />
       <Pressable onPress={useCurrentLocation} style={styles.useLoc}>
         <Pin size={15} color={colors.greenDark} width={2.4} />
         <Txt style={styles.useLocText}>{locating ? 'Getting location…' : 'Use my current location'}</Txt>
       </Pressable>
-      {showPlaces && placeResults.length > 0 && (
-        <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.results}>
-          {placeResults.map((p, i) => (
-            <Pressable
-              key={p.name}
-              onPress={() => {
-                setPlace({ name: p.name, lat: p.lat, lng: p.lng });
-                setPlaceQuery(p.name);
-                setShowPlaces(false);
-              }}
-              style={[styles.result, i > 0 && styles.resultDivider]}
-            >
-              <Pin size={17} color={colors.muted} />
-              <View>
-                <Txt style={styles.resultName}>{p.name}</Txt>
-                <Txt style={styles.resultSub}>{p.sub}</Txt>
-              </View>
-            </Pressable>
-          ))}
-        </Neo>
-      )}
-      {place && !showPlaces && (
+      {place ? (
         <View style={styles.picked}>
           <Check size={18} color={colors.greenDark} width={3.4} />
           <View style={{ flex: 1 }}>
-            <Txt style={styles.pickedName}>{place.name}</Txt>
+            <Txt style={styles.pickedName}>Spot set</Txt>
             <Txt style={styles.pickedCoords}>
               {place.lat.toFixed(4)}, {place.lng.toFixed(4)}
             </Txt>
           </View>
         </View>
+      ) : (
+        <Txt style={[styles.locHint, locError ? { color: colors.red } : null]}>
+          {locError ?? 'Stand at the spot and tap “Use my current location” to pin it. (Map search comes later.)'}
+        </Txt>
       )}
 
       <Label>SCHEDULE</Label>
@@ -214,11 +198,23 @@ export default function Setup() {
       <View style={styles.timeRow}>
         <View style={{ flex: 1 }}>
           <Label>START</Label>
-          <Field value={start} onChangeText={setStart} placeholder="06:00" />
+          <Field
+            value={start}
+            onChangeText={(t) => setStart(maskTime(t))}
+            placeholder="HH:MM"
+            keyboardType="number-pad"
+            maxLength={5}
+          />
         </View>
         <View style={{ flex: 1 }}>
           <Label>END</Label>
-          <Field value={end} onChangeText={setEnd} placeholder="09:00" />
+          <Field
+            value={end}
+            onChangeText={(t) => setEnd(maskTime(t))}
+            placeholder="HH:MM"
+            keyboardType="number-pad"
+            maxLength={5}
+          />
         </View>
       </View>
 
@@ -289,6 +285,7 @@ function Label({ children }: { children: string }) {
 const styles = StyleSheet.create({
   useLoc: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start' },
   useLocText: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: colors.greenDark },
+  locHint: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, marginTop: 10, lineHeight: 18 },
   results: { marginTop: 8, overflow: 'hidden' },
   result: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 14 },
   resultDivider: { borderTopWidth: 1.5, borderTopColor: '#ece8da' },
