@@ -37,7 +37,11 @@ interface KeptState {
   setOnboarded: (v: boolean) => void;
   setRemindersEnabled: (v: boolean) => void;
   setHasHydrated: (v: boolean) => void;
+  /** Re-read habits from storage (picks up background auto check-ins). */
+  refreshFromStorage: () => Promise<void>;
 }
+
+const STORAGE_KEY = 'kept-v1';
 
 function uid(): string {
   return 'h' + Math.random().toString(36).slice(2, 9);
@@ -93,9 +97,22 @@ export const useStore = create<KeptState>()(
       setOnboarded: (v) => set({ onboarded: v }),
       setRemindersEnabled: (v) => set({ remindersEnabled: v }),
       setHasHydrated: (v) => set({ hasHydrated: v }),
+      refreshFromStorage: async () => {
+        try {
+          const raw = await AsyncStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const parsed = JSON.parse(raw);
+          const habits: Habit[] | undefined = parsed?.state?.habits;
+          if (habits) {
+            const cur = get().habits;
+            // only replace if something actually changed (avoid needless re-renders)
+            if (JSON.stringify(cur) !== JSON.stringify(habits)) set({ habits });
+          }
+        } catch {}
+      },
     }),
     {
-      name: 'kept-v1',
+      name: STORAGE_KEY,
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({
         user: s.user,

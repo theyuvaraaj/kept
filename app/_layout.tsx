@@ -47,14 +47,21 @@ export default function RootLayout() {
     if (hydrated) syncAutoCheck(habits).catch(() => {});
   }, [hydrated, habits]);
 
-  // The background task writes storage from a separate context. Re-read it when
-  // the app returns to foreground so auto check-ins show up live.
+  // The background task writes storage from a separate JS context. Re-read it on
+  // resume AND on a short poll while open, so auto check-ins show up live.
   useEffect(() => {
+    if (!hydrated) return;
+    const refresh = () => useStore.getState().refreshFromStorage();
+    refresh();
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') useStore.persist.rehydrate();
+      if (s === 'active') refresh();
     });
-    return () => sub.remove();
-  }, []);
+    const iv = setInterval(refresh, 10000);
+    return () => {
+      sub.remove();
+      clearInterval(iv);
+    };
+  }, [hydrated]);
 
   if (!ready) return null;
 
