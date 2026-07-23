@@ -13,12 +13,54 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import * as Location from 'expo-location';
 import { colors } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { syncReminders } from '@/lib/notifications';
 import { syncAutoCheck } from '@/lib/geofence'; // also registers the background task
+import { todayKey } from '@/lib/analytics';
+import { distanceM } from '@/lib/geo';
+import type { Habit } from '@/lib/types';
 
 SplashScreen.preventAutoHideAsync();
+
+function inWindowNow(h: Habit): boolean {
+  if (!h.start || !h.end) return true;
+  const n = new Date();
+  const cur = n.getHours() * 60 + n.getMinutes();
+  const p = (t: string) => {
+    const [a, b] = t.split(':').map(Number);
+    return a * 60 + b;
+  };
+  return cur >= p(h.start) && cur <= p(h.end);
+}
+
+// While the app is open, do auto check-in through the LIVE store (authoritative)
+// so the UI updates immediately and never gets clobbered by a stale re-save.
+async function foregroundAutoCheck() {
+  const { habits, setDay } = useStore.getState();
+  const active = habits.filter((h) => h.autoCheck && !h.archived);
+  if (!active.length) return;
+  const key = todayKey();
+  const pending = active.filter((h) => {
+    const st = h.history?.[key];
+    return st !== 'green' && st !== 'red' && inWindowNow(h);
+  });
+  if (!pending.length) return;
+  const perm = await Location.getForegroundPermissionsAsync();
+  if (perm.status !== 'granted') return;
+  let pos;
+  try {
+    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  } catch {
+    return;
+  }
+  for (const h of pending) {
+    if (distanceM(pos.coords.latitude, pos.coords.longitude, h.place.lat, h.place.lng) <= (h.radius || 100)) {
+      setDay(h.id, 'green');
+    }
+  }
+}
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -47,16 +89,19 @@ export default function RootLayout() {
     if (hydrated) syncAutoCheck(habits).catch(() => {});
   }, [hydrated, habits]);
 
-  // The background task writes storage from a separate JS context. Re-read it on
-  // resume AND on a short poll while open, so auto check-ins show up live.
+  // Live auto check-in while the app is open (marks via the store → UI updates
+  // instantly). On resume, also pull in anything the background task wrote.
   useEffect(() => {
     if (!hydrated) return;
-    const refresh = () => useStore.getState().refreshFromStorage();
-    refresh();
+    const tick = () => {
+      useStore.getState().refreshFromStorage();
+      foregroundAutoCheck();
+    };
+    tick();
     const sub = AppState.addEventListener('change', (s) => {
-      if (s === 'active') refresh();
+      if (s === 'active') tick();
     });
-    const iv = setInterval(refresh, 10000);
+    const iv = setInterval(tick, 15000);
     return () => {
       sub.remove();
       clearInterval(iv);
