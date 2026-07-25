@@ -11,6 +11,7 @@ import {
   keptPct,
   dateKey,
   todayKey,
+  isMissedDay,
   scheduleLabelShort,
 } from '@/lib/analytics';
 import type { Habit } from '@/lib/types';
@@ -21,7 +22,8 @@ function weekDots(habit: Habit) {
     const d = new Date();
     d.setDate(d.getDate() - back);
     const st = (habit.history || {})[dateKey(d)];
-    out.push(st === 'green' ? colors.green : st === 'red' ? colors.red : colors.surface);
+    const missed = st !== 'green' && (st === 'red' || isMissedDay(habit, d));
+    out.push(st === 'green' ? colors.green : missed ? colors.red : colors.surface);
   }
   return out;
 }

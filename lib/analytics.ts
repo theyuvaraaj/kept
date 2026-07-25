@@ -66,6 +66,20 @@ export function isScheduled(habit: Habit, d: Date): boolean {
   return (habit.days || []).includes(d.getDay());
 }
 
+// A past scheduled day (on/after creation) with no check-in is a miss. Misses
+// are inferred, not stored — every metric already treats absence-of-green on a
+// scheduled day as a miss, so this just gives the UI one shared definition
+// (Home dots + dashboard calendar) instead of each re-deriving it.
+export function isMissedDay(habit: Habit, d: Date): boolean {
+  if ((habit.scheduleType || 'specific') === 'count') return false; // count mode = weekly, no per-day miss
+  const day = midnight(d);
+  if (day.getTime() >= midnight(new Date()).getTime()) return false; // today/future are never missed
+  if (day.getTime() < habitStart(habit).getTime()) return false; // before the habit existed
+  if (!(habit.days || []).includes(day.getDay())) return false; // not a scheduled day
+  const st = (habit.history || {})[dateKey(day)];
+  return st !== 'green' && st !== 'red';
+}
+
 export function streakUnit(habit: Habit): 'DAY STREAK' | 'WEEK STREAK' {
   return (habit.scheduleType || 'specific') === 'count' ? 'WEEK STREAK' : 'DAY STREAK';
 }
@@ -322,26 +336,15 @@ export function monthCells(habit: Habit): CalendarCell[] {
   const first = new Date(y, m, 1).getDay();
   const dim = new Date(y, m + 1, 0).getDate();
   const hist = habit.history || {};
-  const specific = (habit.scheduleType || 'specific') !== 'count';
-  const start = habitStart(habit);
   const cells: CalendarCell[] = [];
   for (let i = 0; i < first; i++) cells.push({ n: 0, kind: 'blank' });
   for (let n = 1; n <= dim; n++) {
-    const st = hist[dateKey(new Date(y, m, n))];
-    const day = midnight(new Date(y, m, n));
-    const dow = day.getDay();
+    const day = new Date(y, m, n);
+    const st = hist[dateKey(day)];
     let kind: CalendarCell['kind'] = 'none';
     if (n === todayN) kind = 'today';
     else if (st === 'green') kind = 'green';
-    else if (st === 'red') kind = 'red';
-    // past scheduled day (on/after creation) with no check-in = missed
-    else if (
-      n < todayN &&
-      specific &&
-      day.getTime() >= start.getTime() &&
-      (habit.days || []).includes(dow)
-    )
-      kind = 'red';
+    else if (st === 'red' || isMissedDay(habit, day)) kind = 'red';
     cells.push({ n, kind });
   }
   return cells;
