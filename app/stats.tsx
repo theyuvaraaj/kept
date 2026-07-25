@@ -10,7 +10,7 @@ import { keptPct, winsOf, weekStats, monthStats, modeLabel, overallHeat, monthTi
 export default function Stats() {
   const router = useRouter();
   const allHabits = useStore((s) => s.habits);
-  const habits = allHabits.filter((h) => !h.archived);
+  const habits = allHabits.filter((h) => !h.archived && !h.deleted);
 
   const pcts = habits.map(keptPct);
   const overall = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : 0;

@@ -27,6 +27,8 @@ export interface Habit {
   createdAt?: string;
   /** Epoch ms of the last local change — drives last-write-wins cloud sync. */
   updatedAt?: number;
+  /** Soft-delete tombstone so deletions propagate across devices. */
+  deleted?: boolean;
   /** Archived habits are hidden from Home + Stats but kept. */
   archived?: boolean;
   /** Map of dateKey -> status. */

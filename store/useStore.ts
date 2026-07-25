@@ -72,7 +72,7 @@ export const useStore = create<KeptState>()(
       session: null,
       syncStatus: 'idle',
 
-      getHabit: (id) => get().habits.find((h) => h.id === id),
+      getHabit: (id) => get().habits.find((h) => h.id === id && !h.deleted),
 
       saveHabit: (draft, editId) => {
         const place = draft.place ?? { name: 'Riverside Track', lat: 37.7694, lng: -122.4862 };
@@ -98,7 +98,14 @@ export const useStore = create<KeptState>()(
         return id;
       },
 
-      deleteHabit: (id) => set((s) => ({ habits: s.habits.filter((h) => h.id !== id) })),
+      // Soft-delete: keep a tombstone (deleted:true) so the deletion syncs to
+      // other devices; filtered out of every list. pushNow uploads it.
+      deleteHabit: (id) =>
+        set((s) => ({
+          habits: s.habits.map((h) =>
+            h.id === id ? { ...h, deleted: true, updatedAt: Date.now() } : h
+          ),
+        })),
 
       archiveHabit: (id, archived) =>
         set((s) => ({

@@ -23,8 +23,8 @@ export default function Profile() {
   const session = useStore((s) => s.session);
   const syncStatus = useStore((s) => s.syncStatus);
   const allHabits = useStore((s) => s.habits);
-  const habits = allHabits.filter((h) => !h.archived);
-  const archived = allHabits.filter((h) => h.archived);
+  const habits = allHabits.filter((h) => !h.archived && !h.deleted);
+  const archived = allHabits.filter((h) => h.archived && !h.deleted);
 
   const best = habits.reduce((mx, h) => Math.max(mx, streakOf(h)), 0);
   const totalWins = habits.reduce((s, h) => s + winsOf(h), 0);

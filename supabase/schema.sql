@@ -19,6 +19,7 @@ create table if not exists public.habits (
   archived      boolean not null default false,
   created_at    text,                             -- app dateKey, e.g. 2026-07-25
   history       jsonb not null default '{}'::jsonb, -- { "2026-07-25": "green" }
+  deleted       boolean not null default false,   -- soft-delete tombstone
   updated_at    timestamptz not null default now()
 );
 

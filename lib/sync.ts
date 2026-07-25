@@ -22,6 +22,7 @@ interface HabitRow {
   archived: boolean;
   created_at: string | null;
   history: Record<string, DayStatus>;
+  deleted: boolean;
   updated_at: string; // ISO
 }
 
@@ -44,6 +45,7 @@ function toRow(h: Habit, userId: string): HabitRow {
     archived: !!h.archived,
     created_at: h.createdAt ?? null,
     history: h.history ?? {},
+    deleted: !!h.deleted,
     updated_at: new Date(h.updatedAt ?? Date.now()).toISOString(),
   };
 }
@@ -64,6 +66,7 @@ function fromRow(r: HabitRow): Habit {
     archived: !!r.archived,
     createdAt: r.created_at ?? undefined,
     history: r.history ?? {},
+    deleted: !!r.deleted,
     updatedAt: r.updated_at ? new Date(r.updated_at).getTime() : 0,
   };
 }

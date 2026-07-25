@@ -103,7 +103,7 @@ export default function Home() {
     }, [])
   );
 
-  const active = useMemo(() => habits.filter((h) => !h.archived), [habits]);
+  const active = useMemo(() => habits.filter((h) => !h.archived && !h.deleted), [habits]);
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
     if (!t) return active;
