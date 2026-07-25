@@ -13,6 +13,7 @@ export default function Login() {
   const onboarded = useStore((s) => s.onboarded);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
   if (!onboarded) return <Redirect href="/onboarding" />;
 
@@ -38,10 +39,19 @@ export default function Login() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <Txt variant="label" style={{ marginTop: 4 }}>
-            PASSWORD
-          </Txt>
-          <Field value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry />
+          <View style={styles.pwLabelRow}>
+            <Txt variant="label">PASSWORD</Txt>
+            <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+              <Txt style={styles.showBtn}>{showPw ? 'HIDE' : 'SHOW'}</Txt>
+            </Pressable>
+          </View>
+          <Field
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            secureTextEntry={!showPw}
+            autoCapitalize="none"
+          />
         </View>
       </View>
 
@@ -64,6 +74,8 @@ const styles = StyleSheet.create({
   word: { fontSize: 54, lineHeight: 54 },
   tagline: { marginTop: 12, maxWidth: 220 },
   form: { marginTop: 30, gap: 10 },
+  pwLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  showBtn: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.greenDark, letterSpacing: 0.5 },
   link: { paddingTop: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.muted },
   linkStrong: { fontFamily: fonts.bodyBold, color: colors.greenDark },

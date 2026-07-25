@@ -14,6 +14,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
   function create() {
     setUser({
@@ -44,10 +45,19 @@ export default function Signup() {
             autoCapitalize="none"
             keyboardType="email-address"
           />
-          <Txt variant="label" style={{ marginTop: 4 }}>
-            PASSWORD
-          </Txt>
-          <Field value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry />
+          <View style={styles.pwLabelRow}>
+            <Txt variant="label">PASSWORD</Txt>
+            <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+              <Txt style={styles.showBtn}>{showPw ? 'HIDE' : 'SHOW'}</Txt>
+            </Pressable>
+          </View>
+          <Field
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            secureTextEntry={!showPw}
+            autoCapitalize="none"
+          />
         </View>
       </View>
       <View>
@@ -67,6 +77,8 @@ const styles = StyleSheet.create({
   top: { flex: 1, justifyContent: 'center' },
   title: { fontSize: 34, marginTop: 5 },
   form: { marginTop: 26, gap: 10 },
+  pwLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  showBtn: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.greenDark, letterSpacing: 0.5 },
   link: { paddingTop: 14, alignItems: 'center' },
   linkText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.muted },
   linkStrong: { fontFamily: fonts.bodyBold, color: colors.greenDark },
