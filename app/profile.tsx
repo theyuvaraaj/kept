@@ -2,17 +2,26 @@ import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Txt, Neo, Button, BackButton } from '@/components/ui';
-import { User, Chart, Logout, Gear } from '@/components/icons';
+import { User, Chart, Gear } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { streakOf, winsOf } from '@/lib/analytics';
 import { hasSupabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
+import { syncNow } from '@/lib/syncEngine';
+
+const SYNC_LABEL = {
+  idle: 'Up to date',
+  syncing: 'Syncing…',
+  synced: 'Synced ✓',
+  error: 'Sync error — tap to retry',
+} as const;
 
 export default function Profile() {
   const router = useRouter();
   const user = useStore((s) => s.user);
   const session = useStore((s) => s.session);
+  const syncStatus = useStore((s) => s.syncStatus);
   const allHabits = useStore((s) => s.habits);
   const habits = allHabits.filter((h) => !h.archived);
   const archived = allHabits.filter((h) => h.archived);
@@ -62,10 +71,10 @@ export default function Profile() {
           </Txt>
           {session ? (
             <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.syncCard}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Txt style={styles.syncTitle}>Synced ✓</Txt>
-                <Txt style={styles.syncSub}>{session.user?.email}</Txt>
-              </View>
+              <Pressable style={{ flex: 1, paddingRight: 12 }} onPress={() => syncNow()}>
+                <Txt style={styles.syncTitle}>{SYNC_LABEL[syncStatus]}</Txt>
+                <Txt style={styles.syncSub}>{session.user?.email} · tap to sync</Txt>
+              </Pressable>
               <Pressable onPress={() => signOut()}>
                 <Txt style={styles.syncAction}>Sign out</Txt>
               </Pressable>
@@ -114,13 +123,6 @@ export default function Profile() {
         </>
       )}
 
-      <Button
-        label="LOG OUT"
-        variant="danger"
-        icon={<Logout size={16} />}
-        onPress={() => router.replace('/')}
-        style={{ marginTop: 18 }}
-      />
     </Screen>
   );
 }

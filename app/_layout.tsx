@@ -23,7 +23,7 @@ import { distanceM } from '@/lib/geo';
 import type { Habit } from '@/lib/types';
 import { hasSupabase } from '@/lib/supabase';
 import { initAuth } from '@/lib/auth';
-import { pullHabits, pushHabits } from '@/lib/sync';
+import { syncNow, pushNow } from '@/lib/syncEngine';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -86,29 +86,16 @@ export default function RootLayout() {
     return initAuth();
   }, []);
 
-  // On sign-in: pull cloud → merge (last-write-wins) → push the merged set back.
+  // On sign-in: full sync (pull → merge → push).
   useEffect(() => {
     if (!hasSupabase || !userId || !hydrated) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const remote = await pullHabits();
-        if (cancelled) return;
-        useStore.getState().mergeRemote(remote);
-        await pushHabits(useStore.getState().habits, userId);
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
+    syncNow();
   }, [userId, hydrated]);
 
   // While signed in, push local changes up (debounced).
   useEffect(() => {
     if (!hasSupabase || !userId || !hydrated) return;
-    const t = setTimeout(() => {
-      pushHabits(useStore.getState().habits, userId).catch(() => {});
-    }, 1500);
+    const t = setTimeout(() => pushNow(), 1500);
     return () => clearTimeout(t);
   }, [habits, userId, hydrated]);
 

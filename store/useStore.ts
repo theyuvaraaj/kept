@@ -50,6 +50,8 @@ interface KeptState {
   setSession: (s: Session | null) => void;
   /** Merge cloud habits into local (last-write-wins). */
   mergeRemote: (remote: Habit[]) => void;
+  syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  setSyncStatus: (s: 'idle' | 'syncing' | 'synced' | 'error') => void;
 }
 
 const STORAGE_KEY = 'kept-v1';
@@ -68,6 +70,7 @@ export const useStore = create<KeptState>()(
       hasHydrated: false,
       autoStatus: 'not started',
       session: null,
+      syncStatus: 'idle',
 
       getHabit: (id) => get().habits.find((h) => h.id === id),
 
@@ -118,6 +121,7 @@ export const useStore = create<KeptState>()(
       setAutoStatus: (s) => set({ autoStatus: s }),
       setSession: (session) => set({ session }),
       mergeRemote: (remote) => set((s) => ({ habits: mergeHabits(s.habits, remote) })),
+      setSyncStatus: (syncStatus) => set({ syncStatus }),
       refreshFromStorage: async () => {
         try {
           const raw = await AsyncStorage.getItem(STORAGE_KEY);
