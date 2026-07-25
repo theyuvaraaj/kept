@@ -17,6 +17,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [showPw, setShowPw] = useState(false);
 
   async function submit() {
     setErr(null);
@@ -28,10 +29,14 @@ export default function Auth() {
     setBusy(true);
     try {
       if (mode === 'up') {
-        await signUp(email, password);
-        // Supabase may require email confirmation depending on project settings.
-        setMsg('Account created. If asked, confirm via the email we sent, then sign in.');
-        setMode('in');
+        const data = await signUp(email, password);
+        if (data.session) {
+          router.replace('/profile'); // confirmation off → signed in immediately
+        } else {
+          // Email confirmation is on → user must confirm, then sign in.
+          setMsg('Account created. Confirm via the email we sent, then sign in.');
+          setMode('in');
+        }
       } else {
         await signIn(email, password);
         router.replace('/profile'); // session set → _layout runs the sync
@@ -73,10 +78,19 @@ export default function Auth() {
         <View style={styles.form}>
           <Txt variant="label">EMAIL</Txt>
           <Field value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" />
-          <Txt variant="label" style={{ marginTop: 4 }}>
-            PASSWORD
-          </Txt>
-          <Field value={password} onChangeText={setPassword} placeholder="••••••••" secureTextEntry />
+          <View style={styles.pwLabelRow}>
+            <Txt variant="label">PASSWORD</Txt>
+            <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8}>
+              <Txt style={styles.showBtn}>{showPw ? 'HIDE' : 'SHOW'}</Txt>
+            </Pressable>
+          </View>
+          <Field
+            value={password}
+            onChangeText={setPassword}
+            placeholder="••••••••"
+            secureTextEntry={!showPw}
+            autoCapitalize="none"
+          />
         </View>
 
         {err && <Txt style={[styles.note, { color: colors.red }]}>{err}</Txt>}
@@ -109,6 +123,8 @@ const styles = StyleSheet.create({
   top: { flex: 1, justifyContent: 'center' },
   sub: { fontFamily: fonts.bodySemi, fontSize: 13, color: colors.muted2, marginTop: 10, maxWidth: 300, lineHeight: 19 },
   form: { marginTop: 26, gap: 10 },
+  pwLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  showBtn: { fontFamily: fonts.bodyBold, fontSize: 11, color: colors.greenDark, letterSpacing: 0.5 },
   note: { fontFamily: fonts.bodySemi, fontSize: 12.5, marginTop: 14, lineHeight: 18 },
   link: { paddingTop: 16, alignItems: 'center' },
   linkText: { fontFamily: fonts.bodySemi, fontSize: 14, color: colors.muted },
