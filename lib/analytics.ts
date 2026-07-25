@@ -3,10 +3,42 @@
 // auto-marked. Both must be fixed before real users (timezone + midnight job).
 
 import { colors } from '@/theme/tokens';
-import type { Habit, HeatWeek } from './types';
+import type { DayStatus, Habit, HeatWeek } from './types';
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+// Zero-padded local date key: `2026-07-05`, not `2026-7-5`. Padding keeps keys
+// lexically sortable and ISO-shaped for exports/debugging. Still LOCAL time —
+// UTC is a backend-sync concern (deferred to real auth/cloud, see notes.txt).
 export function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+// Rewrite an old unpadded key (or already-padded key) to the padded form.
+// Pure string op — no Date construction, so no timezone/DST drift. Idempotent.
+export function normalizeKey(k: string): string {
+  const [y, m, d] = k.split('-').map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return k;
+  return `${y}-${pad2(m)}-${pad2(d)}`;
+}
+
+// One-time migration: normalize every history key + createdAt to the padded
+// form. Idempotent (safe to run on already-migrated data). Returns whether
+// anything changed so callers can skip a needless persist write.
+export function normalizeHabitKeys(habits: Habit[]): { habits: Habit[]; changed: boolean } {
+  let changed = false;
+  const out = habits.map((h) => {
+    const nextHistory: Record<string, DayStatus> = {};
+    for (const [k, v] of Object.entries(h.history || {})) {
+      const nk = normalizeKey(k);
+      if (nk !== k) changed = true;
+      nextHistory[nk] = v;
+    }
+    const createdAt = h.createdAt ? normalizeKey(h.createdAt) : h.createdAt;
+    if (createdAt !== h.createdAt) changed = true;
+    return { ...h, history: nextHistory, createdAt };
+  });
+  return { habits: out, changed };
 }
 
 export function todayKey(): string {
@@ -295,7 +327,7 @@ export function monthCells(habit: Habit): CalendarCell[] {
   const cells: CalendarCell[] = [];
   for (let i = 0; i < first; i++) cells.push({ n: 0, kind: 'blank' });
   for (let n = 1; n <= dim; n++) {
-    const st = hist[`${y}-${m + 1}-${n}`];
+    const st = hist[dateKey(new Date(y, m, n))];
     const day = midnight(new Date(y, m, n));
     const dow = day.getDay();
     let kind: CalendarCell['kind'] = 'none';

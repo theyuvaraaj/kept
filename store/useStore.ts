@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DayStatus, Habit, User } from '@/lib/types';
-import { todayKey } from '@/lib/analytics';
+import { normalizeHabitKeys, todayKey } from '@/lib/analytics';
 import { demoHabits, DEMO_USER } from '@/lib/mockData';
 
 // Persisted to AsyncStorage. First launch seeds demo data; after that the
@@ -39,6 +39,8 @@ interface KeptState {
   setHasHydrated: (v: boolean) => void;
   /** Re-read habits from storage (picks up background auto check-ins). */
   refreshFromStorage: () => Promise<void>;
+  /** Migrate stored history keys to the zero-padded date format (idempotent). */
+  normalizeStoredKeys: () => void;
   autoStatus: string;
   setAutoStatus: (s: string) => void;
 }
@@ -114,6 +116,12 @@ export const useStore = create<KeptState>()(
           }
         } catch {}
       },
+      normalizeStoredKeys: () => {
+        const { habits, changed } = normalizeHabitKeys(get().habits);
+        // set() triggers a persist write, so the on-disk blob (which the
+        // geofence background task reads raw) gets normalized too.
+        if (changed) set({ habits });
+      },
     }),
     {
       name: STORAGE_KEY,
@@ -125,6 +133,7 @@ export const useStore = create<KeptState>()(
         remindersEnabled: s.remindersEnabled,
       }),
       onRehydrateStorage: () => (state) => {
+        state?.normalizeStoredKeys();
         state?.setHasHydrated(true);
       },
     }
