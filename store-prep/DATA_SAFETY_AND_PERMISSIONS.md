@@ -44,12 +44,13 @@ Google reviews background-location use hard. To publish you must:
 2. **Record a short demo video** (they require it): screen-record enabling Auto
    check-in on a habit and it auto-marking on arrival. Upload/link it in the
    declaration.
-3. **In-app prominent disclosure** (recommended to add before submitting): a
-   one-time screen shown *before* requesting background location, saying Kept
-   collects location in the background to auto-check-in, even when closed, and
-   nothing is sent off device. (Our onboarding mentions location — we should
-   tighten it into an explicit prominent-disclosure screen. Small task; flag if
-   you want it before submitting.)
+3. **In-app prominent disclosure — DONE.** Enabling "Auto check-in" on a habit
+   now shows a consent dialog *before* any background-location request:
+   *"Kept uses your location to automatically check you in when you arrive at
+   this spot — including in the background, even when the app is closed. Your
+   location is used only on your device… never sent anywhere, shared, or used
+   for ads."* with **Continue / Not now**. Background permission is only
+   requested on **Continue**. Screenshot this dialog for the Play declaration.
 
 **If background location review feels heavy for v1:** you can ship **without**
 `ACCESS_BACKGROUND_LOCATION` — Auto check-in then works only while the app is

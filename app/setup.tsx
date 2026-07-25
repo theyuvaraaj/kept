@@ -48,18 +48,28 @@ export default function Setup() {
   }
 
   function toggleAuto() {
-    const next = !auto;
-    setAuto(next);
-    if (next) {
-      Alert.alert(
-        'Keep auto check-in reliable',
-        'So Kept can check you in while the app is closed, Android needs to let it run in the background. On the next screen choose “Allow” (don’t optimize).',
-        [
-          { text: 'Not now', style: 'cancel' },
-          { text: 'Allow', onPress: () => requestBatteryExemption() },
-        ]
-      );
+    // Turning OFF is immediate.
+    if (auto) {
+      setAuto(false);
+      return;
     }
+    // Turning ON: prominent disclosure BEFORE any background-location request
+    // (required by Google Play). Only enable + request perms on explicit consent.
+    Alert.alert(
+      'Enable background location?',
+      'Kept uses your location to automatically check you in when you arrive at this spot — including in the background, even when the app is closed.\n\nYour location is used only on your device to mark this habit. It is never sent anywhere, shared, or used for ads.',
+      [
+        { text: 'Not now', style: 'cancel', onPress: () => setAuto(false) },
+        {
+          text: 'Continue',
+          onPress: () => {
+            setAuto(true);
+            // Next: OS location prompt (via save/sync) + battery exemption.
+            requestBatteryExemption();
+          },
+        },
+      ]
+    );
   }
 
   async function useCurrentLocation() {
