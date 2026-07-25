@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Session } from '@supabase/supabase-js';
 import type { DayStatus, Habit, User } from '@/lib/types';
 import { normalizeHabitKeys, todayKey } from '@/lib/analytics';
+import { mergeHabits } from '@/lib/sync';
 import { demoHabits, DEMO_USER } from '@/lib/mockData';
 
 // Persisted to AsyncStorage. First launch seeds demo data; after that the
@@ -43,6 +45,11 @@ interface KeptState {
   normalizeStoredKeys: () => void;
   autoStatus: string;
   setAutoStatus: (s: string) => void;
+  // v2 cloud sync
+  session: Session | null;
+  setSession: (s: Session | null) => void;
+  /** Merge cloud habits into local (last-write-wins). */
+  mergeRemote: (remote: Habit[]) => void;
 }
 
 const STORAGE_KEY = 'kept-v1';
@@ -60,6 +67,7 @@ export const useStore = create<KeptState>()(
       remindersEnabled: true,
       hasHydrated: false,
       autoStatus: 'not started',
+      session: null,
 
       getHabit: (id) => get().habits.find((h) => h.id === id),
 
@@ -76,6 +84,7 @@ export const useStore = create<KeptState>()(
           radius: draft.radius,
           autoCheck: draft.autoCheck,
           reminder: draft.reminder,
+          updatedAt: Date.now(),
         };
         if (editId) {
           set((s) => ({ habits: s.habits.map((h) => (h.id === editId ? { ...h, ...base } : h)) }));
@@ -89,12 +98,16 @@ export const useStore = create<KeptState>()(
       deleteHabit: (id) => set((s) => ({ habits: s.habits.filter((h) => h.id !== id) })),
 
       archiveHabit: (id, archived) =>
-        set((s) => ({ habits: s.habits.map((h) => (h.id === id ? { ...h, archived } : h)) })),
+        set((s) => ({
+          habits: s.habits.map((h) => (h.id === id ? { ...h, archived, updatedAt: Date.now() } : h)),
+        })),
 
       setDay: (id, status) =>
         set((s) => ({
           habits: s.habits.map((h) =>
-            h.id === id ? { ...h, history: { ...h.history, [todayKey()]: status } } : h
+            h.id === id
+              ? { ...h, history: { ...h.history, [todayKey()]: status }, updatedAt: Date.now() }
+              : h
           ),
         })),
 
@@ -103,6 +116,8 @@ export const useStore = create<KeptState>()(
       setRemindersEnabled: (v) => set({ remindersEnabled: v }),
       setHasHydrated: (v) => set({ hasHydrated: v }),
       setAutoStatus: (s) => set({ autoStatus: s }),
+      setSession: (session) => set({ session }),
+      mergeRemote: (remote) => set((s) => ({ habits: mergeHabits(s.habits, remote) })),
       refreshFromStorage: async () => {
         try {
           const raw = await AsyncStorage.getItem(STORAGE_KEY);

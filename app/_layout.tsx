@@ -21,6 +21,9 @@ import { syncAutoCheck } from '@/lib/geofence'; // also registers the background
 import { todayKey } from '@/lib/analytics';
 import { distanceM } from '@/lib/geo';
 import type { Habit } from '@/lib/types';
+import { hasSupabase } from '@/lib/supabase';
+import { initAuth } from '@/lib/auth';
+import { pullHabits, pushHabits } from '@/lib/sync';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -73,7 +76,41 @@ export default function RootLayout() {
   const hydrated = useStore((s) => s.hasHydrated);
   const habits = useStore((s) => s.habits);
   const remindersEnabled = useStore((s) => s.remindersEnabled);
+  const session = useStore((s) => s.session);
+  const userId = session?.user?.id ?? null;
   const ready = loaded && hydrated;
+
+  // v2: load + watch the auth session (no-op if Supabase isn't configured).
+  useEffect(() => {
+    if (!hasSupabase) return;
+    return initAuth();
+  }, []);
+
+  // On sign-in: pull cloud → merge (last-write-wins) → push the merged set back.
+  useEffect(() => {
+    if (!hasSupabase || !userId || !hydrated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await pullHabits();
+        if (cancelled) return;
+        useStore.getState().mergeRemote(remote);
+        await pushHabits(useStore.getState().habits, userId);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, hydrated]);
+
+  // While signed in, push local changes up (debounced).
+  useEffect(() => {
+    if (!hasSupabase || !userId || !hydrated) return;
+    const t = setTimeout(() => {
+      pushHabits(useStore.getState().habits, userId).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [habits, userId, hydrated]);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();

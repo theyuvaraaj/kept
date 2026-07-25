@@ -25,6 +25,8 @@ export interface Habit {
   reminder: boolean;
   /** dateKey the habit was created — nothing before this counts as missed. */
   createdAt?: string;
+  /** Epoch ms of the last local change — drives last-write-wins cloud sync. */
+  updatedAt?: number;
   /** Archived habits are hidden from Home + Stats but kept. */
   archived?: boolean;
   /** Map of dateKey -> status. */

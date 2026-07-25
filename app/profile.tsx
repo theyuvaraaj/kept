@@ -6,10 +6,13 @@ import { User, Chart, Logout, Gear } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { streakOf, winsOf } from '@/lib/analytics';
+import { hasSupabase } from '@/lib/supabase';
+import { signOut } from '@/lib/auth';
 
 export default function Profile() {
   const router = useRouter();
   const user = useStore((s) => s.user);
+  const session = useStore((s) => s.session);
   const allHabits = useStore((s) => s.habits);
   const habits = allHabits.filter((h) => !h.archived);
   const archived = allHabits.filter((h) => h.archived);
@@ -51,6 +54,27 @@ export default function Profile() {
         onPress={() => router.push('/stats')}
         style={{ marginTop: 14 }}
       />
+
+      {hasSupabase && (
+        <>
+          <Txt variant="label" style={{ marginTop: 20, marginBottom: 10 }}>
+            CLOUD SYNC
+          </Txt>
+          {session ? (
+            <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.syncCard}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Txt style={styles.syncTitle}>Synced ✓</Txt>
+                <Txt style={styles.syncSub}>{session.user?.email}</Txt>
+              </View>
+              <Pressable onPress={() => signOut()}>
+                <Txt style={styles.syncAction}>Sign out</Txt>
+              </Pressable>
+            </Neo>
+          ) : (
+            <Button label="SIGN IN TO SYNC" variant="light" onPress={() => router.push('/auth')} />
+          )}
+        </>
+      )}
 
       <Txt variant="label" style={{ marginTop: 20, marginBottom: 10 }}>
         YOUR HABITS
@@ -127,6 +151,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...hardShadow(2),
   },
+  syncCard: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 15 },
+  syncTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: colors.ink },
+  syncSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, marginTop: 3 },
+  syncAction: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.red },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 22 },
   avatar: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
   email: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted2, marginTop: 4 },
