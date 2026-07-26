@@ -16,7 +16,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://tankabiujpxoknopgqna.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_nVYhmqjyDa38SEer8mGiyQ_oxJs7flE",
-        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": ""
+        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_ID": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_SECRET": ""
       }
     },
     "preview": {
@@ -27,7 +29,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://tankabiujpxoknopgqna.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_nVYhmqjyDa38SEer8mGiyQ_oxJs7flE",
-        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": ""
+        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_ID": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_SECRET": ""
       }
     },
     "production": {
@@ -38,7 +42,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://tankabiujpxoknopgqna.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_nVYhmqjyDa38SEer8mGiyQ_oxJs7flE",
-        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": ""
+        "EXPO_PUBLIC_GOOGLE_PLACES_KEY": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_ID": "",
+        "EXPO_PUBLIC_MAPPLS_CLIENT_SECRET": ""
       }
     }
   },
