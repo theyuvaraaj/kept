@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { View, Pressable, StyleSheet, TextInput, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { requestBatteryExemption } from '@/lib/battery';
-import { searchPlaces, type GeoResult } from '@/lib/geocode';
 import { Screen } from '@/components/Screen';
 import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
-import { ArrowRight, Check, Pin, Search } from '@/components/icons';
+import { ArrowRight, Check, Pin } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import type { Place, ScheduleType } from '@/lib/types';
@@ -43,41 +42,6 @@ export default function Setup() {
 
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
-  const [results, setResults] = useState<GeoResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pickedRef = useRef(false); // suppress a search right after picking
-
-  // Debounced place search as the user types a name.
-  useEffect(() => {
-    if (pickedRef.current) {
-      pickedRef.current = false;
-      return;
-    }
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    const q = placeQuery.trim();
-    if (q.length < 3) {
-      setResults([]);
-      return;
-    }
-    setSearching(true);
-    searchTimer.current = setTimeout(async () => {
-      const r = await searchPlaces(q);
-      setResults(r);
-      setSearching(false);
-    }, 500);
-    return () => {
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-    };
-  }, [placeQuery]);
-
-  function pickResult(r: GeoResult) {
-    pickedRef.current = true;
-    setPlace({ name: r.name, lat: r.lat, lng: r.lng });
-    setPlaceQuery(r.name);
-    setResults([]);
-    setLocError(null);
-  }
 
   function toggleDay(i: number) {
     setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i]));
@@ -122,10 +86,8 @@ export default function Setup() {
         });
         if (g[0]) label = g[0].name || g[0].street || g[0].city || label;
       } catch {}
-      pickedRef.current = true;
       setPlace({ name: label, lat: pos.coords.latitude, lng: pos.coords.longitude });
-      setPlaceQuery(label);
-      setResults([]);
+      if (!placeQuery.trim()) setPlaceQuery(label);
       setLocError(null);
     } finally {
       setLocating(false);
@@ -181,35 +143,12 @@ export default function Setup() {
       <Label>HABIT NAME</Label>
       <Field value={name} onChangeText={setName} placeholder="Morning Run" />
 
-      <Label>LOCATION</Label>
+      <Label>NAME THIS SPOT</Label>
       <Field
         value={placeQuery}
-        onChangeText={(t) => {
-          setPlaceQuery(t);
-          setPlace(null);
-        }}
-        placeholder="Search a place (e.g. Gold's Gym)"
+        onChangeText={setPlaceQuery}
+        placeholder="e.g. Gold's Gym"
       />
-      {(searching || results.length > 0) && (
-        <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.results}>
-          {searching && results.length === 0 ? (
-            <View style={styles.result}>
-              <Search size={16} color={colors.muted} />
-              <Txt style={styles.resultSub}>Searching…</Txt>
-            </View>
-          ) : (
-            results.map((r, i) => (
-              <Pressable key={`${r.lat}-${r.lng}-${i}`} onPress={() => pickResult(r)} style={[styles.result, i > 0 && styles.resultDivider]}>
-                <Pin size={16} color={colors.muted} />
-                <View style={{ flex: 1 }}>
-                  <Txt style={styles.resultName} numberOfLines={1}>{r.name}</Txt>
-                  {!!r.sub && <Txt style={styles.resultSub} numberOfLines={1}>{r.sub}</Txt>}
-                </View>
-              </Pressable>
-            ))
-          )}
-        </Neo>
-      )}
       <Pressable onPress={useCurrentLocation} style={styles.useLoc}>
         <Pin size={15} color={colors.greenDark} width={2.4} />
         <Txt style={styles.useLocText}>{locating ? 'Getting location…' : 'Use my current location'}</Txt>
@@ -226,7 +165,7 @@ export default function Setup() {
         </View>
       ) : (
         <Txt style={[styles.locHint, locError ? { color: colors.red } : null]}>
-          {locError ?? 'Search for the spot above, or tap “Use my current location” to pin where you are.'}
+          {locError ?? 'Stand at the spot and tap “Use my current location” to pin it.\n🔍 Map search coming soon.'}
         </Txt>
       )}
 
