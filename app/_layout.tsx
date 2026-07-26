@@ -21,7 +21,7 @@ import { syncAutoCheck } from '@/lib/geofence'; // also registers the background
 import { todayKey } from '@/lib/analytics';
 import { distanceM } from '@/lib/geo';
 import type { Habit } from '@/lib/types';
-import { hasSupabase } from '@/lib/supabase';
+import { hasSupabase, supabase } from '@/lib/supabase';
 import { initAuth } from '@/lib/auth';
 import { syncNow, pushNow } from '@/lib/syncEngine';
 
@@ -98,6 +98,23 @@ export default function RootLayout() {
     const t = setTimeout(() => pushNow(), 1500);
     return () => clearTimeout(t);
   }, [habits, userId, hydrated]);
+
+  // Real-time: another device's change pulls in live (needs the habits table in
+  // the supabase_realtime publication — see migration-02).
+  useEffect(() => {
+    if (!hasSupabase || !userId) return;
+    const ch = supabase
+      .channel(`habits-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${userId}` },
+        () => syncNow()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync();
