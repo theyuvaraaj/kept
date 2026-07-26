@@ -3,71 +3,71 @@
 **Last updated: 25 July 2026**
 
 Kept ("the app", "we") is a location-based habit tracker. This policy explains
-what the app accesses and how your information is handled. **Kept is built to be
-private by default: your data stays on your device.**
+what data the app uses, stores, and shares.
 
 ## Summary
 
-- Kept has **no accounts** and **no servers**. We do not collect, transmit, or
-  sell any personal data.
-- Your habits, check-in history, streaks, and settings are stored **only on your
-  device**.
-- Location is used **on your device** to check whether you are at your chosen
-  spot. Your location is **never sent to us or any third party**.
+- Kept works **without an account**. Used signed-out, your habits and history
+  stay **only on your device**.
+- **Optional cloud sync:** if you create an account and sign in, your habit data
+  is stored on our backend (Supabase) so it can back up and sync across your
+  devices.
+- **Location** is used to confirm you're at a habit's spot. Your live location is
+  processed on your device; the **spot coordinates you save** are stored with the
+  habit (on your device, and in the cloud if you sign in).
+- **Place search** sends the text you type to OpenStreetMap to find locations.
+- No advertising. No third-party analytics/tracking SDKs.
 
-## Information the app uses
+## What we use and store
 
-**Location.** With your permission, Kept reads your device location to confirm
-you are within range of a habit's spot when you check in, and — if you enable
-"Auto check-in" for a habit — to detect arrival at that spot in the background.
-Location is processed on your device and used immediately for that check; it is
-**not stored on any server, not shared, and not used for advertising**.
+**Habit data** (names, the places/coordinates you pick, schedules, check-in
+history, streaks). Stored on your device. If you sign in, also stored in your
+account on **Supabase** so it syncs across devices.
 
-**Habit data.** Habit names, chosen places (coordinates you set), schedules,
-check-in history, and streaks are stored locally on your device using the
-device's app storage. This data never leaves your device.
+**Account data.** If you create an account, we store your **email address** and
+an authentication record via **Supabase Auth** to sign you in and sync your data.
 
-**Notifications.** Kept schedules local reminder notifications on your device.
-No notification data is sent off the device.
+**Location.** With your permission, Kept reads your device location to (a)
+confirm you're within range when you check in, and (b) if you enable "Auto
+check-in," detect arrival at a habit's spot in the background. Your live location
+is evaluated on your device. The **coordinates of spots you choose** are saved
+with your habits (and synced to your account if signed in). We do not
+continuously upload your live location.
 
-## Permissions Kept requests
+**Place search.** When you search for a place, the text you type is sent to the
+**OpenStreetMap Nominatim** service to return matching locations. No account or
+identity is attached.
 
-- **Location (while using / all the time):** to verify check-ins and, if you
-  enable Auto check-in, to auto-mark a habit when you arrive at its spot. "All
-  the time" (background) is only needed for Auto check-in and is optional.
-- **Notifications:** to send you habit reminders.
-- **Ignore battery optimizations / foreground service:** so background Auto
-  check-in can run reliably. Optional; only relevant if you enable Auto check-in.
+**Notifications.** Reminders are scheduled locally on your device.
 
-You can revoke any permission at any time in your device Settings. Auto check-in
-simply stops working; the rest of the app is unaffected.
+## Third-party services
 
-## Data sharing and third parties
+- **Supabase** (supabase.com) — backend + authentication + database for optional
+  cloud sync. Data is transmitted over HTTPS and protected by row-level security
+  so you can only access your own data.
+- **OpenStreetMap / Nominatim** (openstreetmap.org) — place search (geocoding).
 
-Kept does **not** share data with third parties. Kept contains **no advertising
-SDKs and no analytics/tracking SDKs**. There is no backend that receives your
-data.
+We do not sell your data or share it for advertising.
 
 ## Data retention and deletion
 
-All data lives on your device. To delete everything, use **Settings → Reset all
-data** in the app, or uninstall Kept. There is nothing stored elsewhere to
-delete.
+- **Local:** in-app **Settings → Reset all data**, or uninstall Kept.
+- **Account/cloud:** in-app **Profile → Account → Delete account** permanently
+  deletes your account and all cloud data. You can also sign out at any time
+  (local data remains on the device).
 
 ## Children
 
-Kept is not directed to children under 13 and does not knowingly collect data
-from children.
+Kept is not directed to children under 13 and does not knowingly collect their
+data.
 
 ## Changes
 
-If this policy changes, the updated version will be posted at this URL with a new
-"Last updated" date.
+Updates will be posted at this URL with a new "Last updated" date.
 
 ## Contact
 
-Questions about this policy: **yuvarajpeddi9@gmail.com**
+**yuvarajpeddi9@gmail.com**
 
-<!-- EDIT ME: replace the contact email above with your preferred support email
-     before publishing. Host this file at a public URL (e.g. GitHub Pages) and
-     paste that URL into the Play Console + App Store listing. -->
+<!-- EDIT ME: replace the contact email before publishing. Host this file at a
+     public URL (GitHub Pages / gist) and paste that URL into the store listings. -->

@@ -29,11 +29,15 @@ STAY HONEST, STAY CONSISTENT
 • Weekly and monthly summaries.
 • A GitHub-style yearly heatmap of every day you kept.
 
-PRIVATE BY DESIGN
-• No account. No sign-up.
-• Your habits and history stay on your device — nothing is uploaded, sold, or
-  tracked. No ads. No analytics.
-• Location is used only on your device to confirm you're at your spot.
+PRIVATE BY DEFAULT
+• Use it with no account — your habits stay on your device.
+• Optional sign-in backs up and syncs your habits across devices.
+• No ads. No third-party tracking. Location is used to confirm you're at your
+  spot.
+
+SYNC ACROSS DEVICES (OPTIONAL)
+• Create a free account to back up your streaks and pick up where you left off
+  on any device. Delete your account anytime, in-app.
 
 Kept is simple on purpose: choose your spots, show up, keep the chain alive.
 

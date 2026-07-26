@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { Habit } from './types';
-import { fmtTime } from './analytics';
+import { fmtTime, dateKey } from './analytics';
 
 // Local reminders only (works in Expo Go). Remote push is a v2/dev-build concern.
 // Strategy: on any change, cancel EVERYTHING and reschedule from scratch — no
@@ -37,7 +37,12 @@ function parseTime(t: string): { hour: number; minute: number } {
   return { hour: h || 0, minute: m || 0 };
 }
 
-/** Cancel all, then reschedule reminders for every active habit. */
+const HORIZON_DAYS = 14; // reschedule this far ahead; refreshed on every app open
+
+/** Cancel all, then reschedule one-shot reminders for the next HORIZON_DAYS,
+ *  SKIPPING any day already resolved (kept/missed) — so a day you've already
+ *  checked in never gets a redundant "time to keep" nudge. Re-run on app open
+ *  and on any habit change to keep the horizon fresh. */
 export async function syncReminders(habits: Habit[], globalEnabled: boolean): Promise<void> {
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!globalEnabled) return;
@@ -45,35 +50,28 @@ export async function syncReminders(habits: Habit[], globalEnabled: boolean): Pr
   const granted = await ensureNotificationPermission();
   if (!granted) return;
 
+  const now = new Date();
+
   for (const h of habits) {
-    if (!h.reminder || h.archived) continue;
+    if (!h.reminder || h.archived || h.deleted) continue;
     const { hour, minute } = parseTime(h.start);
+    const specific = (h.scheduleType || 'specific') !== 'count';
     const body = `Time to keep "${h.name}" at ${h.place.name} · window ${fmtTime(h.start)}–${fmtTime(h.end)}.`;
     const content = { title: 'Kept', body, ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}) };
 
-    if ((h.scheduleType || 'specific') === 'count') {
-      // any day → one daily reminder
+    for (let i = 0; i < HORIZON_DAYS; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      d.setHours(hour, minute, 0, 0);
+      if (d <= now) continue; // time already passed today
+      if (specific && !(h.days || []).includes(d.getDay())) continue; // not a scheduled weekday
+      const st = (h.history || {})[dateKey(d)];
+      if (st === 'green' || st === 'red') continue; // already resolved that day → no reminder
+
       await Notifications.scheduleNotificationAsync({
         content,
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: d },
       });
-    } else {
-      // specific weekdays → one weekly reminder each (expo weekday: 1=Sun..7=Sat)
-      for (const dow of h.days || []) {
-        await Notifications.scheduleNotificationAsync({
-          content,
-          trigger: {
-            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-            weekday: dow + 1,
-            hour,
-            minute,
-          },
-        });
-      }
     }
   }
 }

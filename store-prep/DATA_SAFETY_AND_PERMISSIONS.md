@@ -1,26 +1,32 @@
 # Play Data Safety form + permissions declarations
 
-Exact answers for the Google Play Console. Kept is local-only, which makes this
-simple — but **background location** triggers extra review steps. Read the
-"Background location" section carefully.
+Exact answers for the Google Play Console. Kept works locally, but with **optional
+cloud sync** (Supabase) it DOES collect data when a user signs in, and **place
+search** sends queries to OpenStreetMap. Answer as data IS collected.
+**Background location** also triggers extra review — see that section.
 
 ## Data Safety form
 
-**Does your app collect or share any of the required user data types?**
-→ **No.**
-Rationale: "Collect" in Play's definition means data transmitted off the device.
-Kept transmits nothing — habits, history, and location are processed and stored
-only on the device. No backend, no analytics, no ads.
+**Does your app collect or share any of the required user data types?** → **Yes**
+(collect). **Shared:** No (not shared with third parties for their own use;
+Supabase/OpenStreetMap are service providers processing on our behalf).
 
-If the form insists you list Location because the app has the permission:
-- Data type: **Location (approximate + precise)**
-- Collected: **No** (not sent off device)
-- Shared: **No**
-- Processed ephemerally / on-device only: **Yes**
-- Purpose: **App functionality** (verify check-ins / auto check-in)
+Declare these data types as **collected** (only when the user signs in / searches):
 
-**Data encrypted in transit:** N/A (no transmission).
-**Users can request deletion:** Yes — in-app "Reset all data" + uninstall.
+| Data type | Collected | Shared | Ephemeral | Purpose | Required? |
+|---|---|---|---|---|---|
+| **Email address** | Yes | No | No | Account management, app functionality | Optional (only if user signs in) |
+| **Location (approximate + precise)** | Yes | No | Some (live location on-device; saved spot coords stored) | App functionality (verify/auto check-in) | Optional |
+| **App activity / other (habit data)** | Yes | No | No | App functionality (sync/backup) | Optional |
+
+Notes for the form:
+- **Data encrypted in transit:** Yes (HTTPS to Supabase / OpenStreetMap).
+- **Users can request deletion:** Yes — in-app **Account → Delete account**
+  (deletes cloud data) and **Settings → Reset all data** (local).
+- All cloud collection is **optional** — the app is fully usable signed-out with
+  no data leaving the device (except place-search queries when used).
+- Third-party processors: **Supabase** (backend/auth/db), **OpenStreetMap
+  Nominatim** (geocoding). Neither is used for advertising.
 
 ## Permissions — how you'll justify them
 
