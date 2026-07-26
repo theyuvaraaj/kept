@@ -17,6 +17,19 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
+export async function updatePassword(newPassword: string) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
+
+/** Delete the account (auth user + habits via FK cascade) through an Edge
+ *  Function, then sign out. Requires the `delete-account` function deployed. */
+export async function deleteAccount() {
+  const { error } = await supabase.functions.invoke('delete-account');
+  if (error) throw error;
+  await supabase.auth.signOut();
+}
+
 export async function sendPasswordReset(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
   if (error) throw error;

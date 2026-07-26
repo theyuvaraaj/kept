@@ -7,7 +7,6 @@ import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { streakOf, winsOf } from '@/lib/analytics';
 import { hasSupabase } from '@/lib/supabase';
-import { signOut } from '@/lib/auth';
 import { syncNow } from '@/lib/syncEngine';
 
 const SYNC_LABEL = {
@@ -75,8 +74,8 @@ export default function Profile() {
                 <Txt style={styles.syncTitle}>{SYNC_LABEL[syncStatus]}</Txt>
                 <Txt style={styles.syncSub}>{session.user?.email} · tap to sync</Txt>
               </Pressable>
-              <Pressable onPress={() => signOut()}>
-                <Txt style={styles.syncAction}>Sign out</Txt>
+              <Pressable onPress={() => router.push('/account')}>
+                <Txt style={styles.syncManage}>Account</Txt>
               </Pressable>
             </Neo>
           ) : (
@@ -157,6 +156,7 @@ const styles = StyleSheet.create({
   syncTitle: { fontFamily: fonts.displayBold, fontSize: 14, color: colors.ink },
   syncSub: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, marginTop: 3 },
   syncAction: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.red },
+  syncManage: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.greenDark },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 22 },
   avatar: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
   email: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted2, marginTop: 4 },
