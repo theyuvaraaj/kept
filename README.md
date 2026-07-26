@@ -1,47 +1,87 @@
-# Kept — mobile app (v1)
+# Kept
 
-Location-based habit tracker. Show up at your spot, keep the streak.
-Built with **Expo (React Native) + expo-router + TypeScript**.
+A location-based habit tracker. Pick a place, show up, keep the streak — Kept
+checks that you actually got there instead of trusting a tap on the couch.
 
-Neobrutalist look ported from the HTML prototype in the parent folder.
+Built with **Expo (React Native) · expo-router · TypeScript · Supabase**.
 
-## v1 scope (this build)
+## Features
 
-Full UI + feel, mock/in-memory data. No real GPS, no real auth.
+- **Location check-in** — confirm you're within range of a habit's spot (GPS).
+- **Auto check-in** — opt-in background geofencing marks a habit when you arrive,
+  even with the app closed.
+- **Two schedules** — specific weekdays, or "any N days a week".
+- **Honest streaks** — count only scheduled days, one grace day, Kept % that
+  reflects missed days.
+- **Stats** — weekly/monthly summaries + a GitHub-style yearly heatmap.
+- **Reminders** — local notifications in each habit's window (skipped once kept).
+- **Cloud sync (optional)** — email sign-in backs up + syncs habits across
+  devices (Supabase), with real-time updates and account deletion. Works fully
+  local + offline without an account.
 
-- Login / Signup — pure UI, any input → Home (real auth is v2)
-- Home — habit list, Kept %, week dots, streak, mode tag, search
-- Habit dashboard — streak, wins, Kept % / this-week / this-month tiles, month calendar, check-in
-- Check-in — "Finding you…" → auto-success (no GPS yet), marks the day, bumps streak
-- Setup — add/edit habit, two schedule modes (specific days **or** N days/week), location picker (mock list), radius, auto-check toggle
-- Stats — overall Kept %, weekly/monthly, GitHub-style yearly heatmap, per-habit breakdown
-- Profile — user, totals, habit list, log out
-
-## Run it
+## Setup
 
 ```bash
-cd kept-app
-npm install          # if deps not already installed
-npx expo start       # then press i (iOS sim), a (Android), or scan QR in Expo Go
+npm install --legacy-peer-deps          # peer-deps flag is required (see .npmrc)
+cp .env.example .env                     # fill in the values below
 ```
 
-- iOS simulator needs Xcode; Android needs Android Studio/emulator. Or use the **Expo Go** app on a physical phone (scan the QR).
-- Type check: `npm run typecheck`
+`.env` (all optional — the app runs without them):
 
-## v2 (see ../notes.txt)
+| Var | Purpose |
+| --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Cloud sync + auth |
+| `EXPO_PUBLIC_MAPPLS_CLIENT_ID` / `_SECRET` or `EXPO_PUBLIC_GOOGLE_PLACES_KEY` | Map search (v1.1 — currently uses "current location" only) |
 
-- Real geofencing (expo-location region monitoring) for auto check-in
-- Auth + login/out (Supabase/Firebase or similar), cloud sync
-- Persistence (AsyncStorage now, backend later)
-- Reminder notifications, streak-freeze/grace day, home-screen widget
-- Fix: auto-mark missed days (midnight job), UTC date keys for timezone safety
+Supabase schema: run `supabase/schema.sql` (+ the `migration-*.sql` files) in the
+Supabase SQL editor.
 
-## Structure
+## Run
+
+```bash
+npx expo start        # scan QR in Expo Go (SDK 54) or press a / i
+npm run typecheck     # tsc --noEmit
+```
+
+Background geofencing needs a real build (below), not Expo Go.
+
+## Build & release (EAS)
+
+```bash
+eas build --profile development --platform android   # dev client (Metro)
+eas build --profile preview     --platform android   # standalone APK to test/share
+eas build --profile production  --platform android   # .aab for Play
+eas submit  --profile production --platform android
+```
+
+`.env` isn't read by cloud builds — non-secret `EXPO_PUBLIC_*` values live in
+`eas.json` per profile. See `store-prep/LAUNCH_CHECKLIST.md` for the full path.
+
+## Assets & store prep
+
+- **App icon / splash:** `assets/icon.png`, `adaptive-icon.png`, `splash-icon.png`
+  (regenerate: `node scripts/gen-icons.mjs`)
+- **Play feature graphic:** `assets/feature-graphic.png` (1024×500,
+  `node scripts/gen-feature-graphic.mjs`)
+- **Screenshots:** not committed — capture 5 from the running app on a device
+  (Home, Dashboard, Stats, Setup, Check-in success) for the Play listing.
+- **Store docs:** `store-prep/` — privacy policy, listing copy, Data Safety
+  answers, Play Console fill-ins, launch checklist.
+
+## Project structure
 
 ```
-app/            expo-router screens (index=Login, home, habit/[id]=Dashboard, setup, checkin, stats, profile)
-components/     Screen, ui (Txt/Neo/Button/Field/Bar), icons, Heatmap
-lib/            types, analytics (streak/Kept%/heatmap math), mockData
-store/          zustand store (in-memory, seeded)
-theme/          tokens (colors, fonts, hard shadow, radius)
+app/         expo-router screens: home, habit/[id] (dashboard), setup, checkin,
+             stats, profile, account, auth, onboarding
+components/  Screen, ui (Txt/Neo/Button/Field/Bar), icons, Heatmap
+lib/         analytics (streak/Kept%/heatmap), geofence, notifications, geo,
+             supabase, auth, sync, syncEngine, types
+store/       zustand store (AsyncStorage-persisted) + cloud session
+theme/       tokens (colors, fonts, hard shadow)
+supabase/    schema.sql, migrations, delete-account Edge Function
 ```
+
+## Notes
+
+- Pinned to **Expo SDK 54** (matches the installed Expo Go).
+- Roadmap (v1.1): map/place search, iOS build, offline sync queue.
