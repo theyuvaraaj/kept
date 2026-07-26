@@ -68,6 +68,3 @@ Updates will be posted at this URL with a new "Last updated" date.
 ## Contact
 
 **yuvarajpeddi9@gmail.com**
-
-<!-- EDIT ME: replace the contact email before publishing. Host this file at a
-     public URL (GitHub Pages / gist) and paste that URL into the store listings. -->
