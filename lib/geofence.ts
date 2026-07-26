@@ -12,6 +12,7 @@ import { todayKey } from './analytics';
 import { distanceM } from './geo';
 
 export const LOCATION_TASK = 'kept-location-watch';
+export const GEOFENCE_TASK = 'kept-geofence';
 const STORE_KEY = 'kept-v1';
 
 function inWindow(h: Habit): boolean {
@@ -41,6 +42,7 @@ async function checkPosition(lat: number, lng: number) {
     if (!inWindow(h)) continue;
     if (distanceM(lat, lng, h.place.lat, h.place.lng) <= (h.radius || 100)) {
       h.history = { ...h.history, [key]: 'green' };
+      h.updatedAt = Date.now();
       marked.push(h);
     }
   }
@@ -56,11 +58,39 @@ async function checkPosition(lat: number, lng: number) {
   }
 }
 
-// Top-level task definition (import this file early — see _layout).
+/** Mark one habit kept — used when a geofence ENTER fires (already in range). */
+async function markHabitId(id: string) {
+  const raw = await AsyncStorage.getItem(STORE_KEY);
+  if (!raw) return;
+  const parsed = JSON.parse(raw);
+  const habits: Habit[] = parsed?.state?.habits ?? [];
+  const h = habits.find((x) => x.id === id);
+  if (!h || !h.autoCheck || h.archived) return;
+  const key = todayKey();
+  const st = h.history?.[key];
+  if (st === 'green' || st === 'red' || !inWindow(h)) return;
+  h.history = { ...h.history, [key]: 'green' };
+  h.updatedAt = Date.now();
+  await AsyncStorage.setItem(STORE_KEY, JSON.stringify(parsed));
+  await Notifications.scheduleNotificationAsync({
+    content: { title: 'Kept ✓', body: `Auto-checked in at ${h.place.name}. Streak safe.` },
+    trigger: null,
+  }).catch(() => {});
+}
+
+// Top-level task definitions (import this file early — see _layout).
 TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (error) return;
   const loc = data?.locations?.[data.locations.length - 1];
   if (loc?.coords) await checkPosition(loc.coords.latitude, loc.coords.longitude).catch(() => {});
+});
+
+// OS geofencing: fires on region ENTER even when the app is force-killed.
+TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }: any) => {
+  if (error) return;
+  if (data?.eventType === Location.GeofencingEventType.Enter && data?.region?.identifier) {
+    await markHabitId(data.region.identifier).catch(() => {});
+  }
 });
 
 /** Start/stop the background watcher. Returns a human status for Settings. */
@@ -70,6 +100,8 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
 
   if (active.length === 0) {
     if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
+    if (await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false))
+      await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
     return 'off — no auto-check habits';
   }
 
@@ -98,6 +130,22 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
         notificationColor: '#8fae5e',
       },
     });
+
+    // Also register OS geofences — these fire on ARRIVAL even when force-killed.
+    try {
+      if (await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false))
+        await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
+      const regions = active.map((h) => ({
+        identifier: h.id,
+        latitude: h.place.lat,
+        longitude: h.place.lng,
+        radius: Math.max(h.radius || 100, 50),
+        notifyOnEnter: true,
+        notifyOnExit: false,
+      }));
+      if (regions.length) await Location.startGeofencingAsync(GEOFENCE_TASK, regions);
+    } catch {}
+
     return 'active — watching in background';
   } catch (e: any) {
     return `error starting service: ${e?.message ?? String(e)}`;
