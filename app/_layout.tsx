@@ -27,6 +27,9 @@ import { syncNow, pushNow, pullMerge } from '@/lib/syncEngine';
 
 SplashScreen.preventAutoHideAsync();
 
+// Matches lib/geofence's grace so foreground + background agree on the window.
+const GRACE_MIN = 10;
+
 function inWindowNow(h: Habit): boolean {
   if (!h.start || !h.end) return true;
   const n = new Date();
@@ -35,7 +38,7 @@ function inWindowNow(h: Habit): boolean {
     const [a, b] = t.split(':').map(Number);
     return a * 60 + b;
   };
-  return cur >= p(h.start) && cur <= p(h.end);
+  return cur >= p(h.start) && cur <= p(h.end) + GRACE_MIN;
 }
 
 // While the app is open, do auto check-in through the LIVE store (authoritative)
@@ -54,7 +57,7 @@ async function foregroundAutoCheck() {
   if (perm.status !== 'granted') return;
   let pos;
   try {
-    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
   } catch {
     return;
   }

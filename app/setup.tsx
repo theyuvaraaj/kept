@@ -32,7 +32,8 @@ export default function Setup() {
   const [start, setStart] = useState(existing?.start ?? '06:00');
   const [end, setEnd] = useState(existing?.end ?? '09:00');
   const [radiusM, setRadiusM] = useState(String(existing?.radius ?? 100));
-  const [auto, setAuto] = useState(existing?.autoCheck ?? false);
+  // Auto check-in is the core feature → ON by default for new habits.
+  const [auto, setAuto] = useState(existing?.autoCheck ?? true);
   const [reminder, setReminder] = useState(existing?.reminder ?? true);
 
   const [locating, setLocating] = useState(false);
@@ -40,6 +41,9 @@ export default function Setup() {
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [autoDisclosure, setAutoDisclosure] = useState(false);
+  // True when the disclosure was triggered by Save (vs the manual toggle), so
+  // granting permission continues the save it interrupted.
+  const [pendingSave, setPendingSave] = useState(false);
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,9 +105,10 @@ export default function Setup() {
     else setAutoDisclosure(true);
   }
 
-  // Consent given → enable + request the location permission auto check-in
-  // needs (foreground for the in-app watcher, background for when closed).
-  async function enableAuto() {
+  // Disclosure accepted → request the location permission auto check-in needs
+  // (foreground for the in-app watcher, background for when the app is closed).
+  // If Save triggered the disclosure, continue that save afterwards.
+  async function confirmDisclosure() {
     setAutoDisclosure(false);
     setAuto(true);
     const fg = await Location.requestForegroundPermissionsAsync();
@@ -111,6 +116,21 @@ export default function Setup() {
       await Location.requestBackgroundPermissionsAsync().catch(() => {});
     }
     requestBatteryExemption();
+    if (pendingSave) {
+      setPendingSave(false);
+      reallySave(true);
+    }
+  }
+
+  // Disclosure declined → auto stays off. If Save triggered it, save anyway
+  // (without auto check-in) rather than blocking the user.
+  function cancelDisclosure() {
+    setAutoDisclosure(false);
+    setAuto(false);
+    if (pendingSave) {
+      setPendingSave(false);
+      reallySave(false);
+    }
   }
 
   async function useCurrentLocation() {
@@ -137,11 +157,26 @@ export default function Setup() {
     }
   }
 
-  function save() {
+  async function save() {
     if (!place) {
       setLocError('Set the spot — tap "Use my current location".');
       return;
     }
+    // Auto on but no background permission yet → show the disclosure first,
+    // then it continues the save (confirmDisclosure / cancelDisclosure).
+    if (auto) {
+      const bg = await Location.getBackgroundPermissionsAsync().catch(() => null);
+      if (!bg || bg.status !== 'granted') {
+        setPendingSave(true);
+        setAutoDisclosure(true);
+        return;
+      }
+    }
+    reallySave(auto);
+  }
+
+  function reallySave(autoVal: boolean) {
+    if (!place) return;
     const finalPlace = { name: placeQuery.trim() || place.name, lat: place.lat, lng: place.lng };
     const newId = saveHabit(
       {
@@ -153,7 +188,7 @@ export default function Setup() {
         start,
         end,
         radius: Number(radiusM) || 100,
-        autoCheck: auto,
+        autoCheck: autoVal,
         reminder,
       },
       editing ? id : null
@@ -332,7 +367,8 @@ export default function Setup() {
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Txt style={styles.autoTitle}>Auto check-in</Txt>
           <Txt style={styles.autoDesc}>
-            Track my location automatically during the window and mark the day for me. Requires always-on location.
+            Kept marks the day for you when you're at your spot during the window — even with the app closed.
+            Needs always-on location. Most reliable with a window of 30 min or more.
           </Txt>
         </View>
         <Pressable onPress={toggleAuto} style={[styles.switch, auto ? styles.switchOn : styles.switchOff]}>
@@ -379,11 +415,8 @@ export default function Setup() {
         }
         cancelLabel="Not now"
         confirmLabel="Continue"
-        onCancel={() => {
-          setAutoDisclosure(false);
-          setAuto(false);
-        }}
-        onConfirm={enableAuto}
+        onCancel={cancelDisclosure}
+        onConfirm={confirmDisclosure}
       />
       <ConfirmModal
         visible={confirmDelete}

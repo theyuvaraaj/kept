@@ -15,6 +15,11 @@ export const LOCATION_TASK = 'kept-location-watch';
 export const GEOFENCE_TASK = 'kept-geofence';
 const STORE_KEY = 'kept-v1';
 
+// Grace after the window end: background fixes are throttled by Android, so a
+// fix that lands a few minutes late should still count. Keeps a tight window
+// from silently missing an arrival.
+const GRACE_MIN = 10;
+
 function inWindow(h: Habit): boolean {
   if (!h.start || !h.end) return true;
   const now = new Date();
@@ -23,7 +28,7 @@ function inWindow(h: Habit): boolean {
     const [hh, mm] = t.split(':').map(Number);
     return hh * 60 + mm;
   };
-  return cur >= p(h.start) && cur <= p(h.end);
+  return cur >= p(h.start) && cur <= p(h.end) + GRACE_MIN;
 }
 
 /** Given a fix, mark every auto habit you're currently at (during its window). */
@@ -112,15 +117,15 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
 
   // Check right now too (covers "already parked" the moment auto-check is on).
   try {
-    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
     await checkPosition(pos.coords.latitude, pos.coords.longitude);
   } catch {}
 
   try {
     if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
     await Location.startLocationUpdatesAsync(LOCATION_TASK, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 120000, // ~2 min
+      accuracy: Location.Accuracy.High,
+      timeInterval: 60000, // ~1 min
       distanceInterval: 0,
       pausesUpdatesAutomatically: false,
       showsBackgroundLocationIndicator: false,
