@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { Txt, Field, Button, BackButton } from '@/components/ui';
+import { Txt, Field, PasswordField, Button, BackButton } from '@/components/ui';
 import { ArrowRight } from '@/components/icons';
 import { colors, fonts } from '@/theme/tokens';
 import { signIn, signUp, sendPasswordReset } from '@/lib/auth';
@@ -17,7 +17,6 @@ export default function Auth() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [showPw, setShowPw] = useState(false);
 
   async function submit() {
     setErr(null);
@@ -78,19 +77,10 @@ export default function Auth() {
         <View style={styles.form}>
           <Txt variant="label">EMAIL</Txt>
           <Field value={email} onChangeText={setEmail} placeholder="you@example.com" autoCapitalize="none" keyboardType="email-address" />
-          <View style={styles.pwLabelRow}>
-            <Txt variant="label">PASSWORD</Txt>
-            <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-              <Txt style={styles.showBtn}>{showPw ? 'HIDE' : 'SHOW'}</Txt>
-            </Pressable>
-          </View>
-          <Field
-            value={password}
-            onChangeText={setPassword}
-            placeholder="••••••••"
-            secureTextEntry={!showPw}
-            autoCapitalize="none"
-          />
+          <Txt variant="label" style={{ marginTop: 4 }}>
+            PASSWORD
+          </Txt>
+          <PasswordField value={password} onChangeText={setPassword} placeholder="••••••••" />
         </View>
 
         {err && <Txt style={[styles.note, { color: colors.red }]}>{err}</Txt>}

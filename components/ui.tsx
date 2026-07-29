@@ -12,7 +12,7 @@ import {
   type TextInputProps,
 } from 'react-native';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
-import { ArrowLeft } from './icons';
+import { ArrowLeft, Eye, EyeOff } from './icons';
 
 /* ---------------- Text ---------------- */
 
@@ -146,6 +146,29 @@ export function Bar({ pct, color = colors.green }: { pct: number; color?: string
 
 export function Field(props: TextInputProps) {
   return <TextInput placeholderTextColor={colors.muted} style={styles.field} {...props} />;
+}
+
+/** Password input with an inline eye toggle. */
+export function PasswordField(props: TextInputProps) {
+  const [show, setShow] = React.useState(false);
+  return (
+    <View style={{ position: 'relative', justifyContent: 'center' }}>
+      <TextInput
+        placeholderTextColor={colors.muted}
+        secureTextEntry={!show}
+        autoCapitalize="none"
+        style={[styles.field, { paddingRight: 46 }]}
+        {...props}
+      />
+      <Pressable
+        onPress={() => setShow((s) => !s)}
+        hitSlop={10}
+        style={{ position: 'absolute', right: 12, height: '100%', justifyContent: 'center' }}
+      >
+        {show ? <EyeOff size={20} /> : <Eye size={20} />}
+      </Pressable>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

@@ -37,20 +37,25 @@
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.theyuvaraaj.kept",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
       "package": "com.theyuvaraaj.kept",
       "edgeToEdgeEnabled": true,
-      "permissions": ["REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"],
+      "permissions": [
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#8fae5e"

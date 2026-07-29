@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
+import { Txt, PasswordField, Button, BackButton, Neo } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { updatePassword, deleteAccount, signOut } from '@/lib/auth';
@@ -11,7 +11,6 @@ export default function Account() {
   const router = useRouter();
   const session = useStore((s) => s.session);
   const [pw, setPw] = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -86,13 +85,10 @@ export default function Account() {
       <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>
         CHANGE PASSWORD
       </Txt>
-      <View style={styles.pwLabelRow}>
-        <Txt variant="label">NEW PASSWORD</Txt>
-        <Pressable onPress={() => setShowPw((v) => !v)} hitSlop={8}>
-          <Txt style={styles.showBtn}>{showPw ? 'HIDE' : 'SHOW'}</Txt>
-        </Pressable>
-      </View>
-      <Field value={pw} onChangeText={setPw} placeholder="••••••••" secureTextEntry={!showPw} autoCapitalize="none" />
+      <Txt variant="label" style={{ marginBottom: 8 }}>
+        NEW PASSWORD
+      </Txt>
+      <PasswordField value={pw} onChangeText={setPw} placeholder="••••••••" />
       {err && <Txt style={[styles.note, { color: colors.red }]}>{err}</Txt>}
       {msg && <Txt style={[styles.note, { color: colors.greenDark }]}>{msg}</Txt>}
       <Button label={busy ? 'SAVING…' : 'UPDATE PASSWORD'} variant="light" onPress={busy ? undefined : changePw} style={{ marginTop: 14 }} />
