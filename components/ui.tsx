@@ -226,13 +226,21 @@ function HoldButton({ onStep, children }: { onStep: () => void; children: React.
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
   };
+  // Clear any running repeat if this button unmounts (modal closes mid-hold).
+  React.useEffect(() => stop, []);
   return (
     <Pressable
-      onPressIn={() => {
-        onStep();
+      // Tap = exactly one step. Long-press = auto-repeat until release. Starting
+      // the interval only on long-press avoids a single tap looping forever.
+      onPress={() => {
+        if (!timer.current) onStep();
+      }}
+      onLongPress={() => {
+        stop();
         timer.current = setInterval(onStep, 110);
       }}
       onPressOut={stop}
+      delayLongPress={280}
       style={({ pressed }) => [styles.tpStep, { transform: [{ translateY: pressed ? 1 : 0 }] }]}
     >
       {children}
