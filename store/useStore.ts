@@ -52,6 +52,10 @@ interface KeptState {
   mergeRemote: (remote: Habit[]) => void;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
   setSyncStatus: (s: 'idle' | 'syncing' | 'synced' | 'error') => void;
+  /** True after a LOCAL edit; cleared once pushed. Merges don't set it — stops
+   *  the realtime→push→realtime sync loop. */
+  dirty: boolean;
+  clearDirty: () => void;
 }
 
 const STORAGE_KEY = 'kept-v1';
@@ -71,6 +75,7 @@ export const useStore = create<KeptState>()(
       autoStatus: 'not started',
       session: null,
       syncStatus: 'idle',
+      dirty: false,
 
       getHabit: (id) => get().habits.find((h) => h.id === id && !h.deleted),
 
@@ -90,11 +95,11 @@ export const useStore = create<KeptState>()(
           updatedAt: Date.now(),
         };
         if (editId) {
-          set((s) => ({ habits: s.habits.map((h) => (h.id === editId ? { ...h, ...base } : h)) }));
+          set((s) => ({ habits: s.habits.map((h) => (h.id === editId ? { ...h, ...base } : h)), dirty: true }));
           return editId;
         }
         const id = uid();
-        set((s) => ({ habits: [...s.habits, { id, ...base, createdAt: todayKey(), history: {} }] }));
+        set((s) => ({ habits: [...s.habits, { id, ...base, createdAt: todayKey(), history: {} }], dirty: true }));
         return id;
       },
 
@@ -102,14 +107,14 @@ export const useStore = create<KeptState>()(
       // other devices; filtered out of every list. pushNow uploads it.
       deleteHabit: (id) =>
         set((s) => ({
-          habits: s.habits.map((h) =>
-            h.id === id ? { ...h, deleted: true, updatedAt: Date.now() } : h
-          ),
+          habits: s.habits.map((h) => (h.id === id ? { ...h, deleted: true, updatedAt: Date.now() } : h)),
+          dirty: true,
         })),
 
       archiveHabit: (id, archived) =>
         set((s) => ({
           habits: s.habits.map((h) => (h.id === id ? { ...h, archived, updatedAt: Date.now() } : h)),
+          dirty: true,
         })),
 
       setDay: (id, status) =>
@@ -119,6 +124,7 @@ export const useStore = create<KeptState>()(
               ? { ...h, history: { ...h.history, [todayKey()]: status }, updatedAt: Date.now() }
               : h
           ),
+          dirty: true,
         })),
 
       setUser: (user) => set({ user }),
@@ -126,6 +132,7 @@ export const useStore = create<KeptState>()(
       setRemindersEnabled: (v) => set({ remindersEnabled: v }),
       setHasHydrated: (v) => set({ hasHydrated: v }),
       setAutoStatus: (s) => set({ autoStatus: s }),
+      clearDirty: () => set({ dirty: false }),
       setSession: (session) => set({ session }),
       mergeRemote: (remote) => set((s) => ({ habits: mergeHabits(s.habits, remote) })),
       setSyncStatus: (syncStatus) => set({ syncStatus }),

@@ -177,8 +177,21 @@ export default function Setup() {
   }
 
   function remove() {
-    if (id) deleteHabit(id);
-    router.replace('/home');
+    Alert.alert(
+      'Delete habit?',
+      `"${name || 'This habit'}" and its history will be permanently deleted. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            if (id) deleteHabit(id);
+            router.replace('/home');
+          },
+        },
+      ]
+    );
   }
 
   function toggleArchive() {
@@ -383,9 +396,10 @@ export default function Setup() {
             onPress={toggleArchive}
             style={{ marginTop: 11 }}
           />
-          <Pressable onPress={remove} style={{ marginTop: 14, alignItems: 'center' }}>
-            <Txt style={styles.delete}>Delete this habit</Txt>
-          </Pressable>
+          <Txt variant="label" style={{ marginTop: 28, marginBottom: 10, color: colors.red }}>
+            DANGER ZONE
+          </Txt>
+          <Button label="DELETE HABIT" variant="danger" onPress={remove} />
         </>
       )}
     </Screen>

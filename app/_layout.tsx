@@ -23,7 +23,7 @@ import { distanceM } from '@/lib/geo';
 import type { Habit } from '@/lib/types';
 import { hasSupabase, supabase } from '@/lib/supabase';
 import { initAuth } from '@/lib/auth';
-import { syncNow, pushNow } from '@/lib/syncEngine';
+import { syncNow, pushNow, pullMerge } from '@/lib/syncEngine';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -78,6 +78,7 @@ export default function RootLayout() {
   const remindersEnabled = useStore((s) => s.remindersEnabled);
   const session = useStore((s) => s.session);
   const userId = session?.user?.id ?? null;
+  const dirty = useStore((s) => s.dirty);
   const ready = loaded && hydrated;
 
   // v2: load + watch the auth session (no-op if Supabase isn't configured).
@@ -92,15 +93,15 @@ export default function RootLayout() {
     syncNow();
   }, [userId, hydrated]);
 
-  // While signed in, push local changes up (debounced).
+  // Push local edits up (debounced) — ONLY when there's a local change (dirty).
+  // Merges/pulls don't set dirty, so this never fires from a sync → no loop.
   useEffect(() => {
-    if (!hasSupabase || !userId || !hydrated) return;
+    if (!hasSupabase || !userId || !hydrated || !dirty) return;
     const t = setTimeout(() => pushNow(), 1500);
     return () => clearTimeout(t);
-  }, [habits, userId, hydrated]);
+  }, [dirty, habits, userId, hydrated]);
 
-  // Real-time: another device's change pulls in live (needs the habits table in
-  // the supabase_realtime publication — see migration-02).
+  // Real-time: another device's change PULLS in live (never pushes → no loop).
   useEffect(() => {
     if (!hasSupabase || !userId) return;
     const ch = supabase
@@ -108,7 +109,7 @@ export default function RootLayout() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${userId}` },
-        () => syncNow()
+        () => pullMerge()
       )
       .subscribe();
     return () => {
