@@ -7,3 +7,6 @@ web-build/
 expo-env.d.ts
 
 .env
+
+# supabase cli scratch
+supabase/.temp/
