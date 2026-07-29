@@ -1,7 +1,8 @@
-import { View, Pressable, StyleSheet, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { Txt, Neo, BackButton } from '@/components/ui';
+import { Txt, Neo, BackButton, ConfirmModal } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { GRACE_DAYS } from '@/lib/analytics';
@@ -11,19 +12,12 @@ export default function Settings() {
   const remindersEnabled = useStore((s) => s.remindersEnabled);
   const setRemindersEnabled = useStore((s) => s.setRemindersEnabled);
   const autoStatus = useStore((s) => s.autoStatus);
+  const [showReset, setShowReset] = useState(false);
 
-  function resetData() {
-    Alert.alert('Reset all data?', 'Deletes every habit and its history. Cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: () => {
-          useStore.setState({ habits: [] });
-          router.replace('/home');
-        },
-      },
-    ]);
+  function doReset() {
+    setShowReset(false);
+    useStore.setState({ habits: [], dirty: true });
+    router.replace('/home');
   }
 
   return (
@@ -78,11 +72,22 @@ export default function Settings() {
       <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>
         DATA
       </Txt>
-      <Pressable onPress={resetData} style={styles.resetBtn}>
+      <Pressable onPress={() => setShowReset(true)} style={styles.resetBtn}>
         <Txt style={styles.resetText}>Reset all data</Txt>
       </Pressable>
 
       <Txt style={styles.version}>Kept v1 · SDK 54</Txt>
+
+      <ConfirmModal
+        visible={showReset}
+        title="Reset all data?"
+        message="Deletes every habit and its history. This cannot be undone."
+        cancelLabel="Cancel"
+        confirmLabel="Reset"
+        danger
+        onCancel={() => setShowReset(false)}
+        onConfirm={doReset}
+      />
     </Screen>
   );
 }

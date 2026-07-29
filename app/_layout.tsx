@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { AppState } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -73,11 +73,14 @@ export default function RootLayout() {
     Jakarta_600SemiBold: PlusJakartaSans_600SemiBold,
     Jakarta_700Bold: PlusJakartaSans_700Bold,
   });
+  const router = useRouter();
   const hydrated = useStore((s) => s.hasHydrated);
   const habits = useStore((s) => s.habits);
   const remindersEnabled = useStore((s) => s.remindersEnabled);
   const session = useStore((s) => s.session);
   const userId = session?.user?.id ?? null;
+  const authReady = useStore((s) => s.authReady);
+  const onboarded = useStore((s) => s.onboarded);
   const dirty = useStore((s) => s.dirty);
 
   // Signatures of only the fields each effect cares about, so a check-in (which
@@ -110,6 +113,13 @@ export default function RootLayout() {
     if (!hasSupabase || !userId || !hydrated) return;
     syncNow();
   }, [userId, hydrated]);
+
+  // Login required: once auth has loaded, no session means bounce to /auth.
+  // Catches sign-out from anywhere (the "log out of the app" behaviour).
+  useEffect(() => {
+    if (!ready || !hasSupabase || !onboarded || !authReady) return;
+    if (!userId) router.replace('/auth');
+  }, [ready, onboarded, authReady, userId]);
 
   // Push local edits up (debounced) — ONLY when there's a local change (dirty).
   // Merges/pulls don't set dirty, so this never fires from a sync → no loop.

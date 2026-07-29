@@ -48,6 +48,10 @@ interface KeptState {
   // v2 cloud sync
   session: Session | null;
   setSession: (s: Session | null) => void;
+  /** True once the initial Supabase getSession() has resolved — so routing can
+   *  wait instead of flashing the login screen for an already-signed-in user. */
+  authReady: boolean;
+  setAuthReady: (v: boolean) => void;
   /** Merge cloud habits into local (last-write-wins). */
   mergeRemote: (remote: Habit[]) => void;
   syncStatus: 'idle' | 'syncing' | 'synced' | 'error';
@@ -74,6 +78,7 @@ export const useStore = create<KeptState>()(
       hasHydrated: false,
       autoStatus: 'not started',
       session: null,
+      authReady: false,
       syncStatus: 'idle',
       dirty: false,
 
@@ -134,6 +139,7 @@ export const useStore = create<KeptState>()(
       setAutoStatus: (s) => set({ autoStatus: s }),
       clearDirty: () => set({ dirty: false }),
       setSession: (session) => set({ session }),
+      setAuthReady: (authReady) => set({ authReady }),
       mergeRemote: (remote) => set((s) => ({ habits: mergeHabits(s.habits, remote) })),
       setSyncStatus: (syncStatus) => set({ syncStatus }),
       refreshFromStorage: async () => {

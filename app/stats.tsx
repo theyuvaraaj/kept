@@ -105,7 +105,7 @@ export default function Stats() {
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
     <Neo r={radius.md} offset={3} style={styles.summaryTile}>
-      <Txt variant="label" style={{ fontSize: 8 }}>
+      <Txt variant="label" style={{ fontSize: 11 }}>
         {label}
       </Txt>
       <Txt variant="big" style={{ fontSize: 24, marginTop: 6 }}>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   winsNum: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.ink },
-  winsLabel: { fontFamily: fonts.display, fontSize: 9, color: colors.ink, letterSpacing: 1, marginTop: 3 },
+  winsLabel: { fontFamily: fonts.display, fontSize: 10.5, color: colors.ink, letterSpacing: 1, marginTop: 3 },
   tileRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
   summaryTile: { flex: 1, padding: 14 },
   summarySub: { fontFamily: fonts.bodySemi, fontSize: 10, color: colors.muted, marginTop: 3 },

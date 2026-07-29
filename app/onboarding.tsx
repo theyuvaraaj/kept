@@ -27,7 +27,7 @@ export default function Onboarding() {
     // Prime notification permission now that we've explained the value.
     await ensureNotificationPermission().catch(() => {});
     setOnboarded(true);
-    router.replace('/');
+    router.replace('/'); // index routes to /auth (login) then /home
   }
 
   return (

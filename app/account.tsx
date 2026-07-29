@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { View, Pressable, StyleSheet, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Pressable, StyleSheet } from 'react-native';
+import { useRouter, Redirect } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { Txt, PasswordField, Button, BackButton, Neo } from '@/components/ui';
+import { Txt, PasswordField, Button, BackButton, Neo, ConfirmModal } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { updatePassword, deleteAccount, signOut } from '@/lib/auth';
@@ -14,12 +14,10 @@ export default function Account() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [showDelete, setShowDelete] = useState(false);
 
-  if (!session) {
-    // Not signed in — nothing to manage.
-    router.replace('/profile');
-    return null;
-  }
+  // Not signed in (e.g. just logged out) — leave immediately.
+  if (!session) return <Redirect href="/auth" />;
 
   async function changePw() {
     setErr(null);
@@ -40,29 +38,15 @@ export default function Account() {
     }
   }
 
-  function confirmDelete() {
-    Alert.alert(
-      'Delete account?',
-      'This permanently deletes your account and all cloud data. Habits on this device stay until you reset. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteAccount();
-              router.replace('/profile');
-            } catch (e: any) {
-              // Function may not be deployed yet — fall back to sign-out + notice.
-              await signOut().catch(() => {});
-              Alert.alert('Signed out', 'Account deletion needs the server function. Signed you out for now.');
-              router.replace('/profile');
-            }
-          },
-        },
-      ]
-    );
+  async function doDelete() {
+    setShowDelete(false);
+    try {
+      await deleteAccount();
+    } catch {
+      // Function may not be deployed yet — fall back to sign-out.
+      await signOut().catch(() => {});
+    }
+    // Session cleared → the _layout guard routes to /auth.
   }
 
   return (
@@ -77,8 +61,8 @@ export default function Account() {
           <Txt style={styles.title}>Signed in as</Txt>
           <Txt style={styles.email}>{session.user?.email}</Txt>
         </View>
-        <Pressable onPress={() => { signOut(); router.replace('/profile'); }}>
-          <Txt style={styles.signOut}>Sign out</Txt>
+        <Pressable onPress={() => signOut()} hitSlop={8}>
+          <Txt style={styles.signOut}>Log out</Txt>
         </Pressable>
       </Neo>
 
@@ -96,8 +80,19 @@ export default function Account() {
       <Txt variant="label" style={{ marginTop: 28, marginBottom: 10 }}>
         DANGER ZONE
       </Txt>
-      <Button label="DELETE ACCOUNT" variant="danger" onPress={confirmDelete} />
+      <Button label="DELETE ACCOUNT" variant="danger" onPress={() => setShowDelete(true)} />
       <Txt style={styles.dangerNote}>Permanently deletes your account + cloud data.</Txt>
+
+      <ConfirmModal
+        visible={showDelete}
+        title="Delete account?"
+        message="This permanently deletes your account and all cloud data. Habits on this device stay until you reset. This cannot be undone."
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setShowDelete(false)}
+        onConfirm={doDelete}
+      />
     </Screen>
   );
 }

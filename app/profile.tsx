@@ -7,20 +7,12 @@ import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { streakOf, winsOf } from '@/lib/analytics';
 import { hasSupabase } from '@/lib/supabase';
-import { syncNow } from '@/lib/syncEngine';
-
-const SYNC_LABEL = {
-  idle: 'Up to date',
-  syncing: 'Syncing…',
-  synced: 'Synced ✓',
-  error: 'Sync error — tap to retry',
-} as const;
+import { signOut } from '@/lib/auth';
 
 export default function Profile() {
   const router = useRouter();
   const user = useStore((s) => s.user);
   const session = useStore((s) => s.session);
-  const syncStatus = useStore((s) => s.syncStatus);
   const allHabits = useStore((s) => s.habits);
   const habits = allHabits.filter((h) => !h.archived && !h.deleted);
   const archived = allHabits.filter((h) => h.archived && !h.deleted);
@@ -63,24 +55,26 @@ export default function Profile() {
         style={{ marginTop: 14 }}
       />
 
-      {hasSupabase && (
+      {hasSupabase && session && (
         <>
           <Txt variant="label" style={{ marginTop: 20, marginBottom: 10 }}>
-            CLOUD SYNC
+            ACCOUNT
           </Txt>
-          {session ? (
-            <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.syncCard}>
-              <Pressable style={{ flex: 1, paddingRight: 12 }} onPress={() => syncNow()}>
-                <Txt style={styles.syncTitle}>{SYNC_LABEL[syncStatus]}</Txt>
-                <Txt style={styles.syncSub}>{session.user?.email} · tap to sync</Txt>
-              </Pressable>
-              <Pressable onPress={() => router.push('/account')}>
-                <Txt style={styles.syncManage}>Account</Txt>
-              </Pressable>
-            </Neo>
-          ) : (
-            <Button label="SIGN IN TO SYNC" variant="light" onPress={() => router.push('/auth')} />
-          )}
+          <Neo r={radius.md} offset={0} borderWidth={2.5} style={styles.syncCard}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Txt style={styles.syncTitle} numberOfLines={1}>{session.user?.email}</Txt>
+              <Txt style={styles.syncSub}>Signed in · habits sync automatically</Txt>
+            </View>
+            <Pressable onPress={() => router.push('/account')} hitSlop={8}>
+              <Txt style={styles.syncManage}>Manage</Txt>
+            </Pressable>
+          </Neo>
+          <Button
+            label="LOG OUT"
+            variant="light"
+            onPress={() => signOut()}
+            style={{ marginTop: 10 }}
+          />
         </>
       )}
 
@@ -162,7 +156,7 @@ const styles = StyleSheet.create({
   email: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted2, marginTop: 4 },
   stats: { flexDirection: 'row', gap: 10, marginTop: 22 },
   statBox: { flex: 1, alignItems: 'center', paddingVertical: 14, paddingHorizontal: 4 },
-  statLabel: { fontSize: 8, letterSpacing: 1, marginTop: 5 },
+  statLabel: { fontSize: 11, letterSpacing: 1, marginTop: 6 },
   habitRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

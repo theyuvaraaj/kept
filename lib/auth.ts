@@ -37,9 +37,13 @@ export async function sendPasswordReset(email: string) {
 
 /** Load the current session + subscribe to changes. Call once on app start. */
 export function initAuth(): () => void {
-  supabase.auth.getSession().then(({ data }) => useStore.getState().setSession(data.session));
+  supabase.auth.getSession().then(({ data }) => {
+    useStore.getState().setSession(data.session);
+    useStore.getState().setAuthReady(true);
+  });
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     useStore.getState().setSession(session);
+    useStore.getState().setAuthReady(true);
   });
   return () => data.subscription.unsubscribe();
 }

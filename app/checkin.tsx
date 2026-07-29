@@ -15,8 +15,7 @@ type Phase = 'locating' | 'success' | 'fail';
 export default function CheckIn() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const habit = useStore((s) => s.getHabit(id));
-  const setDay = useStore((s) => s.setDay);
+  const habit = useStore((s) => s.getHabit(id)); // for display only
 
   const [phase, setPhase] = useState<Phase>('locating');
   const [distTxt, setDistTxt] = useState('');
@@ -26,9 +25,14 @@ export default function CheckIn() {
   const spin = useRef(new Animated.Value(0)).current;
   const ripple = useRef(new Animated.Value(0)).current;
 
+  // Read the habit + setDay from the store imperatively so marking the day
+  // green (which creates a new habit object) never re-triggers locate — that
+  // was the "finding you… → success → finding you…" loop.
   const locate = useCallback(async () => {
     setPhase('locating');
-    if (!habit) return;
+    const h = useStore.getState().getHabit(id);
+    if (!h) return;
+    const setDay = useStore.getState().setDay;
     const t0 = Date.now();
     let apply: () => void;
     try {
@@ -41,11 +45,11 @@ export default function CheckIn() {
         };
       } else {
         const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        const d = distanceM(pos.coords.latitude, pos.coords.longitude, habit.place.lat, habit.place.lng);
-        const radius = habit.radius || 100;
+        const d = distanceM(pos.coords.latitude, pos.coords.longitude, h.place.lat, h.place.lng);
+        const radius = h.radius || 100;
         if (d <= radius) {
           apply = () => {
-            setDay(habit.id, 'green');
+            setDay(h.id, 'green');
             setDistTxt(`${Math.round(d)} m from your spot`);
             setPhase('success');
           };
@@ -53,7 +57,7 @@ export default function CheckIn() {
           apply = () => {
             setFailTitle('Not at your spot');
             const away = d > 1000 ? `${(d / 1000).toFixed(1)} km` : `${Math.round(d)} m`;
-            setFailMsg(`You're ${away} away. Get within ${radius} m of ${habit.place.name} and try again.`);
+            setFailMsg(`You're ${away} away. Get within ${radius} m of ${h.place.name} and try again.`);
             setPhase('fail');
           };
         }
@@ -68,8 +72,10 @@ export default function CheckIn() {
     // keep "Finding you…" on screen for a beat so it never flickers
     const wait = Math.max(0, 850 - (Date.now() - t0));
     setTimeout(apply, wait);
-  }, [habit, setDay]);
+  }, [id]);
 
+  // Run once on mount. locate no longer depends on the reactive habit, so a
+  // successful check-in can't restart this effect.
   useEffect(() => {
     Animated.loop(
       Animated.timing(spin, { toValue: 1, duration: 1000, easing: Easing.linear, useNativeDriver: true })
@@ -78,7 +84,8 @@ export default function CheckIn() {
       Animated.timing(ripple, { toValue: 1, duration: 1800, easing: Easing.out(Easing.ease), useNativeDriver: true })
     ).start();
     locate();
-  }, [locate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const rScale = ripple.interpolate({ inputRange: [0, 1], outputRange: [0.6, 2.4] });

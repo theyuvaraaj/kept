@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
-import { Txt, Field, PasswordField, Button, BackButton } from '@/components/ui';
+import { Txt, Field, PasswordField, Button } from '@/components/ui';
 import { ArrowRight } from '@/components/icons';
 import { colors, fonts } from '@/theme/tokens';
 import { signIn, signUp, sendPasswordReset } from '@/lib/auth';
 
-// Real email+password auth for cloud sync (v2). Optional — the app works fully
-// without signing in.
+// Email+password auth. Login is required — the app gates on a session and
+// everything syncs automatically once signed in.
 export default function Auth() {
   const router = useRouter();
   const [mode, setMode] = useState<'in' | 'up'>('in');
@@ -30,7 +30,7 @@ export default function Auth() {
       if (mode === 'up') {
         const data = await signUp(email, password);
         if (data.session) {
-          router.replace('/profile'); // confirmation off → signed in immediately
+          router.replace('/home'); // confirmation off → signed in immediately
         } else {
           // Email confirmation is on → user must confirm, then sign in.
           setMsg('Account created. Confirm via the email we sent, then sign in.');
@@ -38,7 +38,7 @@ export default function Auth() {
         }
       } else {
         await signIn(email, password);
-        router.replace('/profile'); // session set → _layout runs the sync
+        router.replace('/home'); // session set → _layout runs the sync
       }
     } catch (e: any) {
       setErr(e?.message ?? 'Something went wrong. Try again.');
@@ -64,14 +64,17 @@ export default function Auth() {
 
   return (
     <Screen contentStyle={styles.wrap}>
-      <BackButton onPress={() => router.back()} />
       <View style={styles.top}>
-        <Txt variant="kicker">Cloud sync</Txt>
-        <Txt variant="title" style={{ fontSize: 32, marginTop: 5 }}>
+        <Txt variant="display" style={{ fontSize: 40 }}>
+          Kept.
+        </Txt>
+        <Txt variant="title" style={{ fontSize: 28, marginTop: 14 }}>
           {mode === 'in' ? 'Sign in' : 'Create account'}
         </Txt>
         <Txt style={styles.sub}>
-          Back up your habits and sync across devices. Optional — Kept works without it.
+          {mode === 'in'
+            ? 'Sign in to pick up your habits and streaks on any device.'
+            : 'Create an account — your habits back up and sync automatically.'}
         </Txt>
 
         <View style={styles.form}>

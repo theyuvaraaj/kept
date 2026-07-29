@@ -1,29 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet, TextInput, Alert } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { requestBatteryExemption } from '@/lib/battery';
 import { searchPlaces, type GeoResult } from '@/lib/geocode';
 import { Screen } from '@/components/Screen';
-import { Txt, Field, Button, BackButton, Neo } from '@/components/ui';
+import { Txt, Field, Button, BackButton, Neo, ConfirmModal, TimePickerModal } from '@/components/ui';
 import { ArrowRight, Check, Pin, Search, Clock } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import type { Place, ScheduleType } from '@/lib/types';
 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-const pad2 = (n: number) => String(n).padStart(2, '0');
-function timeToDate(t: string): Date {
-  const [h, m] = (t || '06:00').split(':').map(Number);
-  const d = new Date();
-  d.setHours(h || 0, m || 0, 0, 0);
-  return d;
-}
-function dateToHHMM(d: Date): string {
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-}
 
 export default function Setup() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -50,10 +38,14 @@ export default function Setup() {
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [autoDisclosure, setAutoDisclosure] = useState(false);
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pickedRef = useRef(false);
+  // When editing, the location field is pre-filled with the saved place — start
+  // "picked" so the mount effect doesn't fire a bogus search on that text.
+  const pickedRef = useRef(!!existing);
   const nearRef = useRef<{ lat: number; lng: number } | null>(null);
 
   // Rough current location once (no prompt) to bias search to nearby places.
@@ -104,28 +96,21 @@ export default function Setup() {
   }
 
   function toggleAuto() {
-    // Turning OFF is immediate.
-    if (auto) {
-      setAuto(false);
-      return;
+    // Turning OFF is immediate; turning ON shows the disclosure first.
+    if (auto) setAuto(false);
+    else setAutoDisclosure(true);
+  }
+
+  // Consent given → enable + request the location permission auto check-in
+  // needs (foreground for the in-app watcher, background for when closed).
+  async function enableAuto() {
+    setAutoDisclosure(false);
+    setAuto(true);
+    const fg = await Location.requestForegroundPermissionsAsync();
+    if (fg.status === 'granted') {
+      await Location.requestBackgroundPermissionsAsync().catch(() => {});
     }
-    // Turning ON: prominent disclosure BEFORE any background-location request
-    // (required by Google Play). Only enable + request perms on explicit consent.
-    Alert.alert(
-      'Enable background location?',
-      'Kept uses your location to automatically check you in when you arrive at this spot — including in the background, even when the app is closed.\n\nYour location is used only on your device to mark this habit. It is never sent anywhere, shared, or used for ads.',
-      [
-        { text: 'Not now', style: 'cancel', onPress: () => setAuto(false) },
-        {
-          text: 'Continue',
-          onPress: () => {
-            setAuto(true);
-            // Next: OS location prompt (via save/sync) + battery exemption.
-            requestBatteryExemption();
-          },
-        },
-      ]
-    );
+    requestBatteryExemption();
   }
 
   async function useCurrentLocation() {
@@ -176,22 +161,10 @@ export default function Setup() {
     router.replace(`/habit/${newId}`);
   }
 
-  function remove() {
-    Alert.alert(
-      'Delete habit?',
-      `"${name || 'This habit'}" and its history will be permanently deleted. This can't be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            if (id) deleteHabit(id);
-            router.replace('/home');
-          },
-        },
-      ]
-    );
+  function doDelete() {
+    setConfirmDelete(false);
+    if (id) deleteHabit(id);
+    router.replace('/home');
   }
 
   function toggleArchive() {
@@ -331,23 +304,18 @@ export default function Setup() {
           </Pressable>
         </View>
       </View>
-      <Txt style={styles.timeNote}>Tap to set · 24-hour format</Txt>
-      {picker && (
-        <DateTimePicker
-          value={timeToDate(picker === 'start' ? start : end)}
-          mode="time"
-          is24Hour
-          onChange={(e, date) => {
-            const which = picker;
-            setPicker(null);
-            if (e.type === 'set' && date) {
-              const v = dateToHHMM(date);
-              if (which === 'start') setStart(v);
-              else setEnd(v);
-            }
-          }}
-        />
-      )}
+      <Txt style={styles.timeNote}>Tap either time to change it.</Txt>
+      <TimePickerModal
+        visible={picker !== null}
+        value={picker === 'end' ? end : start}
+        title={picker === 'end' ? 'End time' : 'Start time'}
+        onCancel={() => setPicker(null)}
+        onDone={(v) => {
+          if (picker === 'start') setStart(v);
+          else setEnd(v);
+          setPicker(null);
+        }}
+      />
 
       <Label>CHECK RADIUS</Label>
       <View style={styles.radiusRow}>
@@ -399,9 +367,34 @@ export default function Setup() {
           <Txt variant="label" style={{ marginTop: 28, marginBottom: 10, color: colors.red }}>
             DANGER ZONE
           </Txt>
-          <Button label="DELETE HABIT" variant="danger" onPress={remove} />
+          <Button label="DELETE HABIT" variant="danger" onPress={() => setConfirmDelete(true)} />
         </>
       )}
+
+      <ConfirmModal
+        visible={autoDisclosure}
+        title="Enable background location?"
+        message={
+          'Kept uses your location to automatically check you in when you arrive at this spot — including in the background, even when the app is closed.\n\nYour location is used only on your device to mark this habit. It is never sent anywhere, shared, or used for ads.'
+        }
+        cancelLabel="Not now"
+        confirmLabel="Continue"
+        onCancel={() => {
+          setAutoDisclosure(false);
+          setAuto(false);
+        }}
+        onConfirm={enableAuto}
+      />
+      <ConfirmModal
+        visible={confirmDelete}
+        title="Delete habit?"
+        message={`"${name || 'This habit'}" and its history will be permanently deleted. This can't be undone.`}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={doDelete}
+      />
     </Screen>
   );
 }

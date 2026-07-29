@@ -4,6 +4,7 @@ import {
   View,
   Pressable,
   TextInput,
+  Modal,
   StyleSheet,
   type TextProps,
   type ViewStyle,
@@ -171,7 +172,168 @@ export function PasswordField(props: TextInputProps) {
   );
 }
 
+/* ---------------- Themed confirm dialog ---------------- */
+
+export function ConfirmModal({
+  visible,
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  danger = false,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+      <Pressable style={styles.overlay} onPress={onCancel}>
+        <Pressable style={{ width: '100%', maxWidth: 380 }} onPress={() => {}}>
+          <Neo r={radius.lg} offset={5} style={styles.dialog}>
+            <Text style={styles.dialogTitle}>{title}</Text>
+            <Text style={styles.dialogMsg}>{message}</Text>
+            <View style={styles.dialogRow}>
+              <Button label={cancelLabel} variant="light" onPress={onCancel} style={{ flex: 1 }} />
+              <Button
+                label={confirmLabel}
+                variant={danger ? 'danger' : 'primary'}
+                onPress={onConfirm}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Neo>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/* ---------------- Themed time picker ---------------- */
+
+const clamp = (v: number, max: number) => ((v % (max + 1)) + (max + 1)) % (max + 1);
+
+function HoldButton({ onStep, children }: { onStep: () => void; children: React.ReactNode }) {
+  const timer = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const stop = () => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+  };
+  return (
+    <Pressable
+      onPressIn={() => {
+        onStep();
+        timer.current = setInterval(onStep, 110);
+      }}
+      onPressOut={stop}
+      style={({ pressed }) => [styles.tpStep, { transform: [{ translateY: pressed ? 1 : 0 }] }]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+export function TimePickerModal({
+  visible,
+  value,
+  title,
+  onDone,
+  onCancel,
+}: {
+  visible: boolean;
+  value: string;
+  title: string;
+  onDone: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [h, setH] = React.useState(6);
+  const [m, setM] = React.useState(0);
+  React.useEffect(() => {
+    if (!visible) return;
+    const [hh, mm] = (value || '06:00').split(':').map(Number);
+    setH(clamp(hh || 0, 23));
+    setM(clamp(mm || 0, 59));
+  }, [visible, value]);
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+      <Pressable style={styles.overlay} onPress={onCancel}>
+        <Pressable style={{ width: '100%', maxWidth: 380 }} onPress={() => {}}>
+          <Neo r={radius.lg} offset={5} style={styles.dialog}>
+            <Text style={styles.dialogTitle}>{title}</Text>
+            <View style={styles.tpRow}>
+              <View style={styles.tpCol}>
+                <HoldButton onStep={() => setH((v) => clamp(v + 1, 23))}>
+                  <Text style={styles.tpSign}>+</Text>
+                </HoldButton>
+                <Text style={styles.tpNum}>{pad(h)}</Text>
+                <HoldButton onStep={() => setH((v) => clamp(v - 1, 23))}>
+                  <Text style={styles.tpSign}>–</Text>
+                </HoldButton>
+                <Text style={styles.tpUnit}>HOUR</Text>
+              </View>
+              <Text style={styles.tpColon}>:</Text>
+              <View style={styles.tpCol}>
+                <HoldButton onStep={() => setM((v) => clamp(v + 1, 59))}>
+                  <Text style={styles.tpSign}>+</Text>
+                </HoldButton>
+                <Text style={styles.tpNum}>{pad(m)}</Text>
+                <HoldButton onStep={() => setM((v) => clamp(v - 1, 59))}>
+                  <Text style={styles.tpSign}>–</Text>
+                </HoldButton>
+                <Text style={styles.tpUnit}>MIN</Text>
+              </View>
+            </View>
+            <Text style={styles.tpHint}>24-hour · hold + or – to move fast</Text>
+            <View style={styles.dialogRow}>
+              <Button label="Cancel" variant="light" onPress={onCancel} style={{ flex: 1 }} />
+              <Button label="Set" variant="primary" onPress={() => onDone(`${pad(h)}:${pad(m)}`)} style={{ flex: 1 }} />
+            </View>
+          </Neo>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(28,32,20,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 26,
+  },
+  dialog: { padding: 20 },
+  dialogTitle: { fontFamily: fonts.displayBold, fontSize: 20, color: colors.ink },
+  dialogMsg: { fontFamily: fonts.bodySemi, fontSize: 13.5, color: colors.muted2, marginTop: 10, lineHeight: 20 },
+  dialogRow: { flexDirection: 'row', gap: 10, marginTop: 22 },
+  tpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 18 },
+  tpCol: { alignItems: 'center' },
+  tpStep: {
+    width: 62,
+    height: 42,
+    borderWidth: 2.5,
+    borderColor: colors.ink,
+    borderRadius: radius.sm,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...hardShadow(2),
+  },
+  tpSign: { fontFamily: fonts.displayBold, fontSize: 24, color: colors.ink, lineHeight: 28 },
+  tpNum: { fontFamily: fonts.displayBold, fontSize: 46, color: colors.ink, marginVertical: 8 },
+  tpUnit: { fontFamily: fonts.display, fontSize: 10, color: colors.muted, letterSpacing: 1.5, marginTop: 4 },
+  tpColon: { fontFamily: fonts.displayBold, fontSize: 40, color: colors.ink, marginBottom: 22 },
+  tpHint: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, textAlign: 'center', marginTop: 18 },
   btn: {
     width: '100%',
     borderWidth: 2.5,

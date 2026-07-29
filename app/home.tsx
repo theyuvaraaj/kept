@@ -120,6 +120,9 @@ export default function Home() {
           Kept
         </Txt>
         <View style={styles.headerBtns}>
+          <Pressable onPress={() => router.push('/setup')} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+            <Plus size={18} />
+          </Pressable>
           <Pressable onPress={() => router.push('/stats')} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
             <Chart size={18} />
           </Pressable>
