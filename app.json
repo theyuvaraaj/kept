@@ -38,7 +38,8 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "./plugins/withGradleMemory"
     ],
     "ios": {
       "supportsTablet": false,
