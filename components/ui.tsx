@@ -5,6 +5,7 @@ import {
   Pressable,
   TextInput,
   Modal,
+  ScrollView,
   StyleSheet,
   type TextProps,
   type ViewStyle,
@@ -216,35 +217,88 @@ export function ConfirmModal({
   );
 }
 
-/* ---------------- Themed time picker ---------------- */
+/* ---------------- Themed time picker (scroll wheels) ---------------- */
 
-const clamp = (v: number, max: number) => ((v % (max + 1)) + (max + 1)) % (max + 1);
+const WHEEL_ITEM = 46;
+const WHEEL_VISIBLE = 5; // odd → a true centre row
+const WHEEL_H = WHEEL_ITEM * WHEEL_VISIBLE;
+const PAD_ROWS = (WHEEL_VISIBLE - 1) / 2;
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
-function HoldButton({ onStep, children }: { onStep: () => void; children: React.ReactNode }) {
-  const timer = React.useRef<ReturnType<typeof setInterval> | null>(null);
-  const stop = () => {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
+// One scrollable column. You drag; the value under the fixed centre band is the
+// selection — your finger is on the rows below it, never over the chosen number.
+function WheelColumn({ count, value, onChange }: { count: number; value: number; onChange: (v: number) => void }) {
+  const ref = React.useRef<ScrollView>(null);
+  React.useEffect(() => {
+    // Land on the initial value (component remounts fresh each open).
+    const t = setTimeout(() => ref.current?.scrollTo({ y: value * WHEEL_ITEM, animated: false }), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Just read the resting row — snapToInterval already handles the visual snap,
+  // so we avoid a scrollTo that would fight momentum and cut flicks short.
+  const read = (y: number) => {
+    const i = Math.max(0, Math.min(count - 1, Math.round(y / WHEEL_ITEM)));
+    if (i !== value) onChange(i);
   };
-  // Clear any running repeat if this button unmounts (modal closes mid-hold).
-  React.useEffect(() => stop, []);
   return (
-    <Pressable
-      // Tap = exactly one step. Long-press = auto-repeat until release. Starting
-      // the interval only on long-press avoids a single tap looping forever.
-      onPress={() => {
-        if (!timer.current) onStep();
-      }}
-      onLongPress={() => {
-        stop();
-        timer.current = setInterval(onStep, 110);
-      }}
-      onPressOut={stop}
-      delayLongPress={280}
-      style={({ pressed }) => [styles.tpStep, { transform: [{ translateY: pressed ? 1 : 0 }] }]}
+    <ScrollView
+      ref={ref}
+      style={{ width: 66, height: WHEEL_H }}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={WHEEL_ITEM}
+      decelerationRate="fast"
+      contentOffset={{ x: 0, y: value * WHEEL_ITEM }}
+      contentContainerStyle={{ paddingVertical: WHEEL_ITEM * PAD_ROWS }}
+      onMomentumScrollEnd={(e) => read(e.nativeEvent.contentOffset.y)}
+      onScrollEndDrag={(e) => read(e.nativeEvent.contentOffset.y)}
     >
-      {children}
-    </Pressable>
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={styles.wheelItem}>
+          <Text style={[styles.wheelNum, i === value && styles.wheelNumOn]}>{pad2(i)}</Text>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+function TimeWheels({
+  initial,
+  title,
+  onDone,
+  onCancel,
+}: {
+  initial: string;
+  title: string;
+  onDone: (v: string) => void;
+  onCancel: () => void;
+}) {
+  const [ih, im] = (initial || '06:00').split(':').map((n) => parseInt(n, 10) || 0);
+  const [h, setH] = React.useState(Math.min(23, Math.max(0, ih)));
+  const [m, setM] = React.useState(Math.min(59, Math.max(0, im)));
+  return (
+    <Neo r={radius.lg} offset={5} style={styles.dialog}>
+      <Text style={styles.dialogTitle}>{title}</Text>
+      <Text style={styles.tpHint}>Scroll to your time · 24-hour</Text>
+      <View style={styles.wheelBox}>
+        <View style={styles.wheelBand} pointerEvents="none" />
+        <View style={styles.wheelRow}>
+          <WheelColumn count={24} value={h} onChange={setH} />
+          <View style={styles.wheelColonWrap}>
+            <Text style={styles.wheelColon}>:</Text>
+          </View>
+          <WheelColumn count={60} value={m} onChange={setM} />
+        </View>
+      </View>
+      <View style={styles.wheelLabels}>
+        <Text style={styles.wheelLabel}>HOUR</Text>
+        <Text style={styles.wheelLabel}>MIN</Text>
+      </View>
+      <View style={styles.dialogRow}>
+        <Button label="Cancel" variant="light" onPress={onCancel} style={{ flex: 1 }} />
+        <Button label="Set" variant="primary" onPress={() => onDone(`${pad2(h)}:${pad2(m)}`)} style={{ flex: 1 }} />
+      </View>
+    </Neo>
   );
 }
 
@@ -261,51 +315,12 @@ export function TimePickerModal({
   onDone: (v: string) => void;
   onCancel: () => void;
 }) {
-  const [h, setH] = React.useState(6);
-  const [m, setM] = React.useState(0);
-  React.useEffect(() => {
-    if (!visible) return;
-    const [hh, mm] = (value || '06:00').split(':').map(Number);
-    setH(clamp(hh || 0, 23));
-    setM(clamp(mm || 0, 59));
-  }, [visible, value]);
-  const pad = (n: number) => String(n).padStart(2, '0');
-
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <Pressable style={styles.overlay} onPress={onCancel}>
         <Pressable style={{ width: '100%', maxWidth: 380 }} onPress={() => {}}>
-          <Neo r={radius.lg} offset={5} style={styles.dialog}>
-            <Text style={styles.dialogTitle}>{title}</Text>
-            <View style={styles.tpRow}>
-              <View style={styles.tpCol}>
-                <HoldButton onStep={() => setH((v) => clamp(v + 1, 23))}>
-                  <Text style={styles.tpSign}>+</Text>
-                </HoldButton>
-                <Text style={styles.tpNum}>{pad(h)}</Text>
-                <HoldButton onStep={() => setH((v) => clamp(v - 1, 23))}>
-                  <Text style={styles.tpSign}>–</Text>
-                </HoldButton>
-                <Text style={styles.tpUnit}>HOUR</Text>
-              </View>
-              <Text style={styles.tpColon}>:</Text>
-              <View style={styles.tpCol}>
-                <HoldButton onStep={() => setM((v) => clamp(v + 1, 59))}>
-                  <Text style={styles.tpSign}>+</Text>
-                </HoldButton>
-                <Text style={styles.tpNum}>{pad(m)}</Text>
-                <HoldButton onStep={() => setM((v) => clamp(v - 1, 59))}>
-                  <Text style={styles.tpSign}>–</Text>
-                </HoldButton>
-                <Text style={styles.tpUnit}>MIN</Text>
-              </View>
-            </View>
-            <Text style={styles.tpHint}>24-hour · hold + or – to move fast</Text>
-            <View style={styles.dialogRow}>
-              <Button label="Cancel" variant="light" onPress={onCancel} style={{ flex: 1 }} />
-              <Button label="Set" variant="primary" onPress={() => onDone(`${pad(h)}:${pad(m)}`)} style={{ flex: 1 }} />
-            </View>
-          </Neo>
+          {/* Mount fresh each open so the wheels initialise to `value`. */}
+          {visible && <TimeWheels initial={value} title={title} onDone={onDone} onCancel={onCancel} />}
         </Pressable>
       </Pressable>
     </Modal>
@@ -324,24 +339,37 @@ const styles = StyleSheet.create({
   dialogTitle: { fontFamily: fonts.displayBold, fontSize: 20, color: colors.ink },
   dialogMsg: { fontFamily: fonts.bodySemi, fontSize: 13.5, color: colors.muted2, marginTop: 10, lineHeight: 20 },
   dialogRow: { flexDirection: 'row', gap: 10, marginTop: 22 },
-  tpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 18 },
-  tpCol: { alignItems: 'center' },
-  tpStep: {
-    width: 62,
-    height: 42,
+  tpHint: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, textAlign: 'center', marginTop: 6 },
+  wheelBox: {
+    marginTop: 14,
+    height: WHEEL_H,
     borderWidth: 2.5,
     borderColor: colors.ink,
-    borderRadius: radius.sm,
-    backgroundColor: colors.green,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...hardShadow(2),
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  tpSign: { fontFamily: fonts.displayBold, fontSize: 24, color: colors.ink, lineHeight: 28 },
-  tpNum: { fontFamily: fonts.displayBold, fontSize: 46, color: colors.ink, marginVertical: 8 },
-  tpUnit: { fontFamily: fonts.display, fontSize: 10, color: colors.muted, letterSpacing: 1.5, marginTop: 4 },
-  tpColon: { fontFamily: fonts.displayBold, fontSize: 40, color: colors.ink, marginBottom: 22 },
-  tpHint: { fontFamily: fonts.bodySemi, fontSize: 12, color: colors.muted, textAlign: 'center', marginTop: 18 },
+  // Fixed centre band — whatever number rests here is the selection.
+  wheelBand: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: WHEEL_ITEM * PAD_ROWS,
+    height: WHEEL_ITEM,
+    backgroundColor: colors.greenSoft,
+    borderTopWidth: 2.5,
+    borderBottomWidth: 2.5,
+    borderColor: colors.ink,
+  },
+  wheelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: WHEEL_H },
+  wheelItem: { height: WHEEL_ITEM, alignItems: 'center', justifyContent: 'center' },
+  wheelNum: { fontFamily: fonts.displayBold, fontSize: 26, color: colors.muted, opacity: 0.55 },
+  wheelNumOn: { color: colors.ink, opacity: 1 },
+  wheelColonWrap: { height: WHEEL_H, justifyContent: 'center' },
+  wheelColon: { fontFamily: fonts.displayBold, fontSize: 30, color: colors.ink },
+  wheelLabels: { flexDirection: 'row', justifyContent: 'center', gap: 58, marginTop: 8 },
+  wheelLabel: { fontFamily: fonts.display, fontSize: 10, color: colors.muted, letterSpacing: 1.5 },
   btn: {
     width: '100%',
     borderWidth: 2.5,

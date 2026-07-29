@@ -70,6 +70,17 @@ export default function Settings() {
       </Neo>
 
       <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>
+        FEEDBACK
+      </Txt>
+      <Pressable onPress={() => router.push('/feedback')} style={styles.feedbackRow}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Txt style={styles.rowTitle}>Send feedback</Txt>
+          <Txt style={styles.rowDesc}>Bugs, ideas, gripes — the dev reads every one, every week.</Txt>
+        </View>
+        <Txt style={styles.feedbackArrow}>→</Txt>
+      </Pressable>
+
+      <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>
         DATA
       </Txt>
       <Pressable onPress={() => setShowReset(true)} style={styles.resetBtn}>
@@ -119,5 +130,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   resetText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.red },
+  feedbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
+    backgroundColor: colors.greenSoft,
+    paddingVertical: 14,
+    paddingHorizontal: 15,
+  },
+  feedbackArrow: { fontFamily: fonts.displayBold, fontSize: 20, color: colors.ink },
   version: { fontFamily: fonts.bodySemi, fontSize: 11, color: colors.faint, textAlign: 'center', marginTop: 24 },
 });
