@@ -10,3 +10,7 @@ expo-env.d.ts
 
 # supabase cli scratch
 supabase/.temp/
+
+# Local build artifacts (APKs are large; keep out of git)
+*.apk
+builds/
