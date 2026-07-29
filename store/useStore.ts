@@ -5,7 +5,6 @@ import type { Session } from '@supabase/supabase-js';
 import type { DayStatus, Habit, User } from '@/lib/types';
 import { normalizeHabitKeys, todayKey } from '@/lib/analytics';
 import { mergeHabits } from '@/lib/sync';
-import { demoHabits, DEMO_USER } from '@/lib/mockData';
 
 // Persisted to AsyncStorage. First launch seeds demo data; after that the
 // user's real habits/history/user are restored on every app start.
@@ -71,8 +70,9 @@ function uid(): string {
 export const useStore = create<KeptState>()(
   persist(
     (set, get) => ({
-      user: DEMO_USER,
-      habits: demoHabits(),
+      // New installs start empty. Sample data only via Settings → Load sample.
+      user: { name: '', email: '' },
+      habits: [],
       onboarded: false,
       remindersEnabled: true,
       hasHydrated: false,

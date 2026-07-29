@@ -99,6 +99,7 @@ export default function Home() {
   const router = useRouter();
   const habits = useStore((s) => s.habits);
   const user = useStore((s) => s.user);
+  const firstName = (user.name || '').split(' ')[0] || 'there';
   const [q, setQ] = useState('');
 
   // Home is the root: Android back asks to confirm exit instead of popping to
@@ -155,8 +156,8 @@ export default function Home() {
 
       <Txt style={styles.greeting}>
         {noHabits
-          ? `Hi ${user.name.split(' ')[0]} - let's set your first spot.`
-          : `Hi ${user.name.split(' ')[0]} - ${active.length} ${active.length === 1 ? 'habit' : 'habits'} in play.`}
+          ? `Hi ${firstName} - let's set your first spot.`
+          : `Hi ${firstName} - ${active.length} ${active.length === 1 ? 'habit' : 'habits'} in play.`}
       </Txt>
 
       {noHabits ? (

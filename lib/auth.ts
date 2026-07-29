@@ -36,13 +36,27 @@ export async function sendPasswordReset(email: string) {
 }
 
 /** Load the current session + subscribe to changes. Call once on app start. */
+// Give the store a display name derived from the account email, but only when
+// we don't already have one (so the demo identity set by "Load sample data"
+// isn't clobbered).
+function applySessionUser(email?: string | null) {
+  if (!email) return;
+  const cur = useStore.getState().user;
+  if (cur.email) return;
+  const prefix = email.split('@')[0].replace(/[._-]+/g, ' ').trim();
+  const name = prefix ? prefix.charAt(0).toUpperCase() + prefix.slice(1) : 'there';
+  useStore.getState().setUser({ name, email });
+}
+
 export function initAuth(): () => void {
   supabase.auth.getSession().then(({ data }) => {
     useStore.getState().setSession(data.session);
+    applySessionUser(data.session?.user?.email);
     useStore.getState().setAuthReady(true);
   });
   const { data } = supabase.auth.onAuthStateChange((_event, session) => {
     useStore.getState().setSession(session);
+    applySessionUser(session?.user?.email);
     useStore.getState().setAuthReady(true);
   });
   return () => data.subscription.unsubscribe();
