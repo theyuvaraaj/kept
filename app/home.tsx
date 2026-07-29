@@ -270,6 +270,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.cream,
     paddingVertical: 15,
+    paddingHorizontal: 28,
   },
   newText: { fontFamily: fonts.displayBold, fontSize: 14, color: colors.ink },
 });
