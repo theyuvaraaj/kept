@@ -317,12 +317,15 @@ export function TimePickerModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
-      <Pressable style={styles.overlay} onPress={onCancel}>
-        <Pressable style={{ width: '100%', maxWidth: 380 }} onPress={() => {}}>
+      <View style={styles.overlay}>
+        {/* Backdrop is a sibling BEHIND the dialog — wrapping the wheels in a
+            Pressable steals the scroll gesture on Android and freezes them. */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
+        <View style={{ width: '100%', maxWidth: 380 }}>
           {/* Mount fresh each open so the wheels initialise to `value`. */}
           {visible && <TimeWheels initial={value} title={title} onDone={onDone} onCancel={onCancel} />}
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }

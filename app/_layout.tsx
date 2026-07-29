@@ -55,17 +55,30 @@ async function foregroundAutoCheck() {
   if (!pending.length) return;
   const perm = await Location.getForegroundPermissionsAsync();
   if (perm.status !== 'granted') return;
-  let pos;
-  try {
-    pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-  } catch {
-    return;
-  }
-  for (const h of pending) {
-    if (distanceM(pos.coords.latitude, pos.coords.longitude, h.place.lat, h.place.lng) <= (h.radius || 100)) {
-      setDay(h.id, 'green');
+
+  const markAt = (lat: number, lng: number) => {
+    for (const h of pending) {
+      if (
+        useStore.getState().habits.find((x) => x.id === h.id)?.history?.[key] !== 'green' &&
+        distanceM(lat, lng, h.place.lat, h.place.lng) <= (h.radius || 100)
+      ) {
+        setDay(h.id, 'green');
+      }
     }
-  }
+  };
+
+  // Instant path: the cached last-known fix returns in ~0ms, so a spot you're
+  // already at reflects on the home screen immediately (no waiting for GPS).
+  try {
+    const last = await Location.getLastKnownPositionAsync();
+    if (last?.coords) markAt(last.coords.latitude, last.coords.longitude);
+  } catch {}
+
+  // Then a fresh high-accuracy fix to catch arrivals the cache missed.
+  try {
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    markAt(pos.coords.latitude, pos.coords.longitude);
+  } catch {}
 }
 
 export default function RootLayout() {
