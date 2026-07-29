@@ -61,8 +61,8 @@ export function sampleHabits(): Habit[] {
       radius: 120,
       autoCheck: true,
       reminder: true,
-      createdAt: daysBackKey(300),
-      history: genSpecific([1, 3, 5], 300, 0.9, 24),
+      createdAt: daysBackKey(350),
+      history: genSpecific([1, 3, 5], 350, 0.97, 45),
     },
     {
       id: 'h2',
@@ -76,8 +76,8 @@ export function sampleHabits(): Habit[] {
       radius: 150,
       autoCheck: true,
       reminder: true,
-      createdAt: daysBackKey(300),
-      history: genSpecific([1, 2, 3, 4, 5, 6], 300, 0.85, 16),
+      createdAt: daysBackKey(350),
+      history: genSpecific([1, 2, 3, 4, 5, 6], 350, 0.95, 32),
     },
     {
       id: 'h3',
@@ -91,8 +91,8 @@ export function sampleHabits(): Habit[] {
       radius: 140,
       autoCheck: true,
       reminder: false,
-      createdAt: daysBackKey(320),
-      history: genSpecific([1, 2, 3, 4, 5], 320, 0.95, 30),
+      createdAt: daysBackKey(360),
+      history: genSpecific([1, 2, 3, 4, 5], 360, 0.98, 60),
     },
     {
       id: 'h4',
@@ -106,8 +106,8 @@ export function sampleHabits(): Habit[] {
       radius: 100,
       autoCheck: false,
       reminder: true,
-      createdAt: daysBackKey(260),
-      history: genCount([2, 4, 0], 260, 0.88, 12),
+      createdAt: daysBackKey(340),
+      history: genCount([2, 4, 0], 340, 0.96, 30),
     },
     {
       id: 'h5',
@@ -121,8 +121,8 @@ export function sampleHabits(): Habit[] {
       radius: 100,
       autoCheck: false,
       reminder: true,
-      createdAt: daysBackKey(210),
-      history: genCount([1, 2, 3, 4, 0], 210, 0.82, 10),
+      createdAt: daysBackKey(330),
+      history: genCount([1, 2, 3, 4, 0], 330, 0.95, 28),
     },
     {
       id: 'h6',
@@ -136,8 +136,8 @@ export function sampleHabits(): Habit[] {
       radius: 100,
       autoCheck: false,
       reminder: true,
-      createdAt: daysBackKey(180),
-      history: genSpecific([2, 4], 180, 0.8, 14),
+      createdAt: daysBackKey(300),
+      history: genSpecific([2, 4], 300, 0.95, 30),
     },
   ];
 }
