@@ -1,4 +1,4 @@
-// Pure habit analytics — ported from the HTML prototype, typed.
+// Pure habit analytics - ported from the HTML prototype, typed.
 // NOTE (v2 / see notes.txt): date keys use LOCAL time and missed days are never
 // auto-marked. Both must be fixed before real users (timezone + midnight job).
 
@@ -8,14 +8,14 @@ import type { DayStatus, Habit, HeatWeek } from './types';
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 // Zero-padded local date key: `2026-07-05`, not `2026-7-5`. Padding keeps keys
-// lexically sortable and ISO-shaped for exports/debugging. Still LOCAL time —
+// lexically sortable and ISO-shaped for exports/debugging. Still LOCAL time -
 // UTC is a backend-sync concern (deferred to real auth/cloud, see notes.txt).
 export function dateKey(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 // Rewrite an old unpadded key (or already-padded key) to the padded form.
-// Pure string op — no Date construction, so no timezone/DST drift. Idempotent.
+// Pure string op - no Date construction, so no timezone/DST drift. Idempotent.
 export function normalizeKey(k: string): string {
   const [y, m, d] = k.split('-').map(Number);
   if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return k;
@@ -67,7 +67,7 @@ export function isScheduled(habit: Habit, d: Date): boolean {
 }
 
 // A past scheduled day (on/after creation) with no check-in is a miss. Misses
-// are inferred, not stored — every metric already treats absence-of-green on a
+// are inferred, not stored - every metric already treats absence-of-green on a
 // scheduled day as a miss, so this just gives the UI one shared definition
 // (Home dots + dashboard calendar) instead of each re-deriving it.
 export function isMissedDay(habit: Habit, d: Date): boolean {
@@ -105,7 +105,7 @@ function dayStreak(habit: Habit): number {
       const isToday = d.getTime() === today.getTime();
       if (st === 'green') count++;
       else if (isToday) {
-        /* pending today — neither count nor break */
+        /* pending today - neither count nor break */
       } else if (grace > 0) grace--; // forgive one slip
       else break;
     }

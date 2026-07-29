@@ -3,7 +3,7 @@ import { useStore } from '@/store/useStore';
 import { hasSupabase } from '@/lib/supabase';
 
 // App entry. Login is required: onboard once, then sign in, then Home.
-// Everything syncs automatically once signed in — there is no separate "sync".
+// Everything syncs automatically once signed in - there is no separate "sync".
 export default function Index() {
   const onboarded = useStore((s) => s.onboarded);
   const session = useStore((s) => s.session);

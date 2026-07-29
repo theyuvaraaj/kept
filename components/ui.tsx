@@ -226,7 +226,7 @@ const PAD_ROWS = (WHEEL_VISIBLE - 1) / 2;
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 // One scrollable column. You drag; the value under the fixed centre band is the
-// selection — your finger is on the rows below it, never over the chosen number.
+// selection - your finger is on the rows below it, never over the chosen number.
 function WheelColumn({ count, value, onChange }: { count: number; value: number; onChange: (v: number) => void }) {
   const ref = React.useRef<ScrollView>(null);
   React.useEffect(() => {
@@ -235,7 +235,7 @@ function WheelColumn({ count, value, onChange }: { count: number; value: number;
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // Just read the resting row — snapToInterval already handles the visual snap,
+  // Just read the resting row - snapToInterval already handles the visual snap,
   // so we avoid a scrollTo that would fight momentum and cut flicks short.
   const read = (y: number) => {
     const i = Math.max(0, Math.min(count - 1, Math.round(y / WHEEL_ITEM)));
@@ -318,7 +318,7 @@ export function TimePickerModal({
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
       <View style={styles.overlay}>
-        {/* Backdrop is a sibling BEHIND the dialog — wrapping the wheels in a
+        {/* Backdrop is a sibling BEHIND the dialog - wrapping the wheels in a
             Pressable steals the scroll gesture on Android and freezes them. */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
         <View style={{ width: '100%', maxWidth: 380 }}>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  // Fixed centre band — whatever number rests here is the selection.
+  // Fixed centre band - whatever number rests here is the selection.
   wheelBand: {
     position: 'absolute',
     left: 0,

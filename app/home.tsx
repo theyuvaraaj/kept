@@ -3,7 +3,7 @@ import { View, Pressable, StyleSheet, BackHandler, ToastAndroid, Platform } from
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
 import { Txt, Neo, Bar } from '@/components/ui';
-import { Chart, User, Search, Pin, Flame, Plus, Check } from '@/components/icons';
+import { Chart, User, Search, Pin, Flame, Plus, Check, Chat } from '@/components/icons';
 import { colors, fonts, radius, hardShadow } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import {
@@ -126,6 +126,9 @@ export default function Home() {
           <Pressable onPress={() => router.push('/stats')} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
             <Chart size={18} />
           </Pressable>
+          <Pressable onPress={() => router.push('/feedback')} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+            <Chat size={18} />
+          </Pressable>
           <Pressable onPress={() => router.push('/profile')} style={[styles.iconBtn, { backgroundColor: colors.green }]}>
             <User size={18} />
           </Pressable>
@@ -134,8 +137,8 @@ export default function Home() {
 
       <Txt style={styles.greeting}>
         {noHabits
-          ? `Hi ${user.name.split(' ')[0]} — let's set your first spot.`
-          : `Hi ${user.name.split(' ')[0]} — ${active.length} ${active.length === 1 ? 'habit' : 'habits'} in play.`}
+          ? `Hi ${user.name.split(' ')[0]} - let's set your first spot.`
+          : `Hi ${user.name.split(' ')[0]} - ${active.length} ${active.length === 1 ? 'habit' : 'habits'} in play.`}
       </Txt>
 
       {noHabits ? (

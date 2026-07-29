@@ -47,7 +47,7 @@ export default function Setup() {
   const [results, setResults] = useState<GeoResult[]>([]);
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // When editing, the location field is pre-filled with the saved place — start
+  // When editing, the location field is pre-filled with the saved place - start
   // "picked" so the mount effect doesn't fire a bogus search on that text.
   const pickedRef = useRef(!!existing);
   const nearRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -159,7 +159,7 @@ export default function Setup() {
 
   async function save() {
     if (!place) {
-      setLocError('Set the spot — tap "Use my current location".');
+      setLocError('Set the spot - tap "Use my current location".');
       return;
     }
     // Auto on but no background permission yet → show the disclosure first,
@@ -319,7 +319,7 @@ export default function Setup() {
               <Txt style={styles.stepSign}>+</Txt>
             </Pressable>
           </Neo>
-          <Txt style={styles.hint}>Any {weeklyTarget} days a week — you choose which, we just count.</Txt>
+          <Txt style={styles.hint}>Any {weeklyTarget} days a week - you choose which, we just count.</Txt>
         </>
       )}
 
@@ -367,7 +367,7 @@ export default function Setup() {
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Txt style={styles.autoTitle}>Auto check-in</Txt>
           <Txt style={styles.autoDesc}>
-            Kept marks the day for you when you're at your spot during the window — even with the app closed.
+            Kept marks the day for you when you're at your spot during the window - even with the app closed.
             Needs always-on location. Most reliable with a window of 30 min or more.
           </Txt>
         </View>
@@ -411,7 +411,7 @@ export default function Setup() {
         visible={autoDisclosure}
         title="Enable background location?"
         message={
-          'Kept uses your location to automatically check you in when you arrive at this spot — including in the background, even when the app is closed.\n\nYour location is used only on your device to mark this habit. It is never sent anywhere, shared, or used for ads.'
+          'Kept uses your location to automatically check you in when you arrive at this spot - including in the background, even when the app is closed.\n\nYour location is used only on your device to mark this habit. It is never sent anywhere, shared, or used for ads.'
         }
         cancelLabel="Not now"
         confirmLabel="Continue"

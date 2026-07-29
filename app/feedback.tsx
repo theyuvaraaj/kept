@@ -24,7 +24,7 @@ export default function Feedback() {
       return;
     }
     if (!hasSupabase) {
-      setErr('No connection to send this right now — try again when you’re online.');
+      setErr('No connection to send this right now - try again when you’re online.');
       return;
     }
     setBusy(true);
@@ -59,7 +59,7 @@ export default function Feedback() {
             Got it. 💚
           </Txt>
           <Txt style={styles.doneBody}>
-            You’re officially on the roadmap. I read this within the week — if it’s a bug, it’s already
+            You’re officially on the roadmap. I read this within the week - if it’s a bug, it’s already
             annoying me too.
           </Txt>
           <Button
@@ -78,7 +78,7 @@ export default function Feedback() {
 
           <Neo r={radius.lg} offset={4} bg={colors.greenSoft} style={styles.note}>
             <Txt style={styles.noteText}>
-              Real human here 👋 One person builds Kept — and I read <Txt style={styles.noteStrong}>every single</Txt>{' '}
+              Real human here 👋 One person builds Kept - and I read <Txt style={styles.noteStrong}>every single</Txt>{' '}
               note, every week. No bots, no black hole, no “we value your feedback” form that goes nowhere.
               {'\n\n'}
               Found a bug? Hate a button? Got a wild idea? Tell me. The next update is basically your wishlist.
@@ -91,7 +91,7 @@ export default function Feedback() {
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Type anything — the good, the bad, the ‘why is this button here’…"
+            placeholder="Type anything - the good, the bad, the ‘why is this button here’…"
             placeholderTextColor={colors.muted}
             multiline
             textAlignVertical="top"

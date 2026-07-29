@@ -6,7 +6,7 @@ import { hasSupabase } from './supabase';
 // store <-> sync import cycle (store imports mergeHabits from ./sync).
 //
 // Loop-safety: only LOCAL edits push (guarded by the store's `dirty` flag in
-// _layout). Realtime events call pullMerge (pull only) — never push — so a
+// _layout). Realtime events call pullMerge (pull only) - never push - so a
 // push can't trigger a realtime event that triggers another push.
 
 /** Pull cloud → merge into local (last-write-wins). No push. */

@@ -26,7 +26,7 @@ export default function CheckIn() {
   const ripple = useRef(new Animated.Value(0)).current;
 
   // Read the habit + setDay from the store imperatively so marking the day
-  // green (which creates a new habit object) never re-triggers locate — that
+  // green (which creates a new habit object) never re-triggers locate - that
   // was the "finding you… → success → finding you…" loop.
   const locate = useCallback(async () => {
     setPhase('locating');
@@ -122,7 +122,7 @@ export default function CheckIn() {
             <Txt variant="title" style={{ fontSize: 29, textAlign: 'center' }}>
               You're at the spot!
             </Txt>
-            <Txt style={styles.congrats}>Congrats — you kept the promise.</Txt>
+            <Txt style={styles.congrats}>Congrats - you kept the promise.</Txt>
             <View style={styles.streakRow}>
               <Txt style={styles.streakText}>
                 Streak is now <Txt style={styles.streakBold}>{streak} days</Txt>

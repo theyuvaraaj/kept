@@ -1,4 +1,4 @@
-// Place search. Priority: Mappls (MapmyIndia — great India coverage, free tier)
+// Place search. Priority: Mappls (MapmyIndia - great India coverage, free tier)
 // → Google Places (if key) → Photon (free OSM fallback). Configure whichever
 // you have via env; without any, Photon is used.
 

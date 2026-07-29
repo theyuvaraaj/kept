@@ -1,6 +1,6 @@
 // Background auto check-in. Requires a dev/EAS build (NOT Expo Go) + "Allow all
 // the time" location. A periodic background location task checks "am I at a
-// spot during its window?" — so it works whether you just arrived OR are already
+// spot during its window?" - so it works whether you just arrived OR are already
 // parked there, with the app closed. Battery cost is why this is opt-in per habit.
 
 import * as TaskManager from 'expo-task-manager';
@@ -63,7 +63,7 @@ async function checkPosition(lat: number, lng: number) {
   }
 }
 
-/** Mark one habit kept — used when a geofence ENTER fires (already in range). */
+/** Mark one habit kept - used when a geofence ENTER fires (already in range). */
 async function markHabitId(id: string) {
   const raw = await AsyncStorage.getItem(STORE_KEY);
   if (!raw) return;
@@ -83,7 +83,7 @@ async function markHabitId(id: string) {
   }).catch(() => {});
 }
 
-// Top-level task definitions (import this file early — see _layout).
+// Top-level task definitions (import this file early - see _layout).
 TaskManager.defineTask(LOCATION_TASK, async ({ data, error }: any) => {
   if (error) return;
   const loc = data?.locations?.[data.locations.length - 1];
@@ -107,13 +107,13 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
     if (started) await Location.stopLocationUpdatesAsync(LOCATION_TASK).catch(() => {});
     if (await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false))
       await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
-    return 'off — no auto-check habits';
+    return 'off - no auto-check habits';
   }
 
   const fg = await Location.requestForegroundPermissionsAsync();
-  if (fg.status !== 'granted') return `blocked — location "${fg.status}"`;
+  if (fg.status !== 'granted') return `blocked - location "${fg.status}"`;
   const bg = await Location.requestBackgroundPermissionsAsync();
-  if (bg.status !== 'granted') return `blocked — need "Allow all the time" (got "${bg.status}")`;
+  if (bg.status !== 'granted') return `blocked - need "Allow all the time" (got "${bg.status}")`;
 
   // Check right now too (covers "already parked" the moment auto-check is on).
   try {
@@ -136,7 +136,7 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
       },
     });
 
-    // Also register OS geofences — these fire on ARRIVAL even when force-killed.
+    // Also register OS geofences - these fire on ARRIVAL even when force-killed.
     try {
       if (await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false))
         await Location.stopGeofencingAsync(GEOFENCE_TASK).catch(() => {});
@@ -151,7 +151,7 @@ export async function syncAutoCheck(habits: Habit[]): Promise<string> {
       if (regions.length) await Location.startGeofencingAsync(GEOFENCE_TASK, regions);
     } catch {}
 
-    return 'active — watching in background';
+    return 'active - watching in background';
   } catch (e: any) {
     return `error starting service: ${e?.message ?? String(e)}`;
   }

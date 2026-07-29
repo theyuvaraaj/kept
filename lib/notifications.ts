@@ -4,7 +4,7 @@ import type { Habit } from './types';
 import { fmtTime, dateKey } from './analytics';
 
 // Local reminders only (works in Expo Go). Remote push is a v2/dev-build concern.
-// Strategy: on any change, cancel EVERYTHING and reschedule from scratch — no
+// Strategy: on any change, cancel EVERYTHING and reschedule from scratch - no
 // per-habit id bookkeeping to drift out of sync.
 
 Notifications.setNotificationHandler({
@@ -40,7 +40,7 @@ function parseTime(t: string): { hour: number; minute: number } {
 const HORIZON_DAYS = 14; // reschedule this far ahead; refreshed on every app open
 
 /** Cancel all, then reschedule one-shot reminders for the next HORIZON_DAYS,
- *  SKIPPING any day already resolved (kept/missed) — so a day you've already
+ *  SKIPPING any day already resolved (kept/missed) - so a day you've already
  *  checked in never gets a redundant "time to keep" nudge. Re-run on app open
  *  and on any habit change to keep the horizon fresh. */
 export async function syncReminders(habits: Habit[], globalEnabled: boolean): Promise<void> {

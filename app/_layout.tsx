@@ -137,7 +137,7 @@ export default function RootLayout() {
     if (!userId) router.replace('/auth');
   }, [ready, onboarded, authReady, userId]);
 
-  // Push local edits up (debounced) — ONLY when there's a local change (dirty).
+  // Push local edits up (debounced) - ONLY when there's a local change (dirty).
   // Merges/pulls don't set dirty, so this never fires from a sync → no loop.
   useEffect(() => {
     if (!hasSupabase || !userId || !hydrated || !dirty) return;

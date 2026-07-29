@@ -16,7 +16,7 @@ export default function Account() {
   const [err, setErr] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
 
-  // Not signed in (e.g. just logged out) — leave immediately.
+  // Not signed in (e.g. just logged out) - leave immediately.
   if (!session) return <Redirect href="/auth" />;
 
   async function changePw() {
@@ -43,7 +43,7 @@ export default function Account() {
     try {
       await deleteAccount();
     } catch {
-      // Function may not be deployed yet — fall back to sign-out.
+      // Function may not be deployed yet - fall back to sign-out.
       await signOut().catch(() => {});
     }
     // Session cleared → the _layout guard routes to /auth.

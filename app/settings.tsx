@@ -75,7 +75,7 @@ export default function Settings() {
       <Pressable onPress={() => router.push('/feedback')} style={styles.feedbackRow}>
         <View style={{ flex: 1, paddingRight: 12 }}>
           <Txt style={styles.rowTitle}>Send feedback</Txt>
-          <Txt style={styles.rowDesc}>Bugs, ideas, gripes — the dev reads every one, every week.</Txt>
+          <Txt style={styles.rowDesc}>Bugs, ideas, gripes - the dev reads every one, every week.</Txt>
         </View>
         <Txt style={styles.feedbackArrow}>→</Txt>
       </Pressable>

@@ -7,7 +7,7 @@ import { ArrowRight } from '@/components/icons';
 import { colors, fonts } from '@/theme/tokens';
 import { signIn, signUp, sendPasswordReset } from '@/lib/auth';
 
-// Email+password auth. Login is required — the app gates on a session and
+// Email+password auth. Login is required - the app gates on a session and
 // everything syncs automatically once signed in.
 export default function Auth() {
   const router = useRouter();
@@ -74,7 +74,7 @@ export default function Auth() {
         <Txt style={styles.sub}>
           {mode === 'in'
             ? 'Sign in to pick up your habits and streaks on any device.'
-            : 'Create an account — your habits back up and sync automatically.'}
+            : 'Create an account - your habits back up and sync automatically.'}
         </Txt>
 
         <View style={styles.form}>

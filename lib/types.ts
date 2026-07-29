@@ -23,9 +23,9 @@ export interface Habit {
   autoCheck: boolean;
   /** Send a local reminder during the window. */
   reminder: boolean;
-  /** dateKey the habit was created — nothing before this counts as missed. */
+  /** dateKey the habit was created - nothing before this counts as missed. */
   createdAt?: string;
-  /** Epoch ms of the last local change — drives last-write-wins cloud sync. */
+  /** Epoch ms of the last local change - drives last-write-wins cloud sync. */
   updatedAt?: number;
   /** Soft-delete tombstone so deletions propagate across devices. */
   deleted?: boolean;

@@ -8,7 +8,7 @@ import { useStore } from '@/store/useStore';
 import { ensureNotificationPermission } from '@/lib/notifications';
 
 const STEPS = [
-  { icon: 'pin', title: 'Pick your spot', body: 'Choose a real place — the track, the gym, the library.' },
+  { icon: 'pin', title: 'Pick your spot', body: 'Choose a real place - the track, the gym, the library.' },
   { icon: 'check', title: 'Show up in the window', body: 'Check in while you\'re there during your chosen hours.' },
   { icon: 'flame', title: 'Keep the streak', body: 'Every day you show up builds the chain. Don\'t break it.' },
 ];

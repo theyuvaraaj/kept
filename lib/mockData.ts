@@ -5,7 +5,7 @@ export const DEMO_USER: User = { name: 'Alex Rivera', email: 'demo@kept.app' };
 
 export const PLACES: Array<Place & { sub: string }> = [
   { name: 'Riverside Track', sub: 'Running trail · 0.4 mi', lat: 37.7694, lng: -122.4862 },
-  { name: 'GoldGym — Downtown', sub: 'Fitness center · 1.1 mi', lat: 37.7849, lng: -122.4094 },
+  { name: 'GoldGym - Downtown', sub: 'Fitness center · 1.1 mi', lat: 37.7849, lng: -122.4094 },
   { name: 'Blue Bottle Coffee', sub: 'Café · 0.6 mi', lat: 37.7765, lng: -122.423 },
   { name: 'City Library, 3rd Fl', sub: 'Study space · 0.9 mi', lat: 37.7788, lng: -122.4159 },
   { name: 'Dolores Park', sub: 'Park · 0.7 mi', lat: 37.7596, lng: -122.4269 },

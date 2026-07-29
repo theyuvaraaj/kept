@@ -12,7 +12,7 @@ export default function Stats() {
   const router = useRouter();
   const allHabits = useStore((s) => s.habits);
 
-  // Heavy (overallHeat = 371 cells × habits) — recompute only when habits change.
+  // Heavy (overallHeat = 371 cells × habits) - recompute only when habits change.
   const { habits, overall, wins, wd, wt, md, mt, heat, months } = useMemo(() => {
     const list = allHabits.filter((h) => !h.archived && !h.deleted);
     const pcts = list.map(keptPct);

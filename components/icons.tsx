@@ -155,3 +155,15 @@ export function Logout({ size = 16, color = colors.surface, width = 2.4 }: IconP
     </Svg>
   );
 }
+
+export function Chat({ size = 18, color = colors.ink, width = 2.2 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"
+        {...stroke(color, width)}
+      />
+      <Path d="M8 10h8M8 13h5" {...stroke(color, width)} />
+    </Svg>
+  );
+}
