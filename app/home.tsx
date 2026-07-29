@@ -17,13 +17,31 @@ import {
 import type { Habit } from '@/lib/types';
 
 function weekDots(habit: Habit) {
+  const dayColor = (d: Date) => {
+    const st = (habit.history || {})[dateKey(d)];
+    if (st === 'green') return colors.green;
+    if (st === 'red' || isMissedDay(habit, d)) return colors.red;
+    return colors.surface;
+  };
+  // Specific: show the last 7 SCHEDULED days. Rendering off-days as empty dots
+  // makes even a perfectly-kept Mon/Wed/Fri habit look ~40% full — misleading.
+  if ((habit.scheduleType || 'specific') === 'specific' && (habit.days || []).length) {
+    const out: string[] = [];
+    const d = new Date();
+    let guard = 0;
+    while (out.length < 7 && guard < 120) {
+      if (habit.days.includes(d.getDay())) out.push(dayColor(new Date(d)));
+      d.setDate(d.getDate() - 1);
+      guard++;
+    }
+    return out.reverse();
+  }
+  // Count mode has no fixed days → last 7 calendar days.
   const out: string[] = [];
   for (let back = 6; back >= 0; back--) {
     const d = new Date();
     d.setDate(d.getDate() - back);
-    const st = (habit.history || {})[dateKey(d)];
-    const missed = st !== 'green' && (st === 'red' || isMissedDay(habit, d));
-    out.push(st === 'green' ? colors.green : missed ? colors.red : colors.surface);
+    out.push(dayColor(d));
   }
   return out;
 }

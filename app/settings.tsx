@@ -16,15 +16,31 @@ export default function Settings() {
   const [showReset, setShowReset] = useState(false);
   const [showSample, setShowSample] = useState(false);
 
+  // Removing a habit needs a soft-delete tombstone, not just dropping it
+  // locally — otherwise cloud sync unions it right back in on the next pull.
   function doReset() {
     setShowReset(false);
-    useStore.setState({ habits: [], dirty: true });
+    const now = Date.now();
+    const tombstones = useStore
+      .getState()
+      .habits.filter((h) => !h.deleted)
+      .map((h) => ({ ...h, deleted: true, updatedAt: now }));
+    useStore.setState({ habits: tombstones, dirty: true });
     router.replace('/home');
   }
 
   function doLoadSample() {
     setShowSample(false);
-    useStore.setState({ habits: sampleHabits(), user: DEMO_USER, dirty: true });
+    const now = Date.now();
+    const samples = sampleHabits().map((h) => ({ ...h, updatedAt: now }));
+    const ids = new Set(samples.map((h) => h.id));
+    // Tombstone anything that isn't part of the sample set so the account ends
+    // up with exactly these 6 (no stragglers syncing back).
+    const tombstones = useStore
+      .getState()
+      .habits.filter((h) => !ids.has(h.id) && !h.deleted)
+      .map((h) => ({ ...h, deleted: true, updatedAt: now }));
+    useStore.setState({ habits: [...samples, ...tombstones], user: DEMO_USER, dirty: true });
     router.replace('/home');
   }
 
