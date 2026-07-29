@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { View, Pressable, StyleSheet, BackHandler, ToastAndroid, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -28,7 +28,7 @@ function weekDots(habit: Habit) {
   return out;
 }
 
-function HabitCard({ habit }: { habit: Habit }) {
+const HabitCard = memo(function HabitCard({ habit }: { habit: Habit }) {
   const router = useRouter();
   const streak = streakOf(habit);
   const pct = keptPct(habit);
@@ -75,7 +75,7 @@ function HabitCard({ habit }: { habit: Habit }) {
       </Neo>
     </Pressable>
   );
-}
+});
 
 export default function Home() {
   const router = useRouter();

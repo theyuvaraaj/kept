@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '@/components/Screen';
@@ -10,20 +11,29 @@ import { keptPct, winsOf, weekStats, monthStats, modeLabel, overallHeat, monthTi
 export default function Stats() {
   const router = useRouter();
   const allHabits = useStore((s) => s.habits);
-  const habits = allHabits.filter((h) => !h.archived && !h.deleted);
 
-  const pcts = habits.map(keptPct);
-  const overall = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : 0;
-  const wins = habits.reduce((s, h) => s + winsOf(h), 0);
-  let wd = 0, wt = 0, md = 0, mt = 0;
-  habits.forEach((h) => {
-    const w = weekStats(h);
-    wd += w.done;
-    wt += w.target;
-    const m = monthStats(h);
-    md += m.done;
-    mt += m.target;
-  });
+  // Heavy (overallHeat = 371 cells × habits) — recompute only when habits change.
+  const { habits, overall, wins, wd, wt, md, mt, heat, months } = useMemo(() => {
+    const list = allHabits.filter((h) => !h.archived && !h.deleted);
+    const pcts = list.map(keptPct);
+    let wd = 0, wt = 0, md = 0, mt = 0;
+    list.forEach((h) => {
+      const w = weekStats(h);
+      wd += w.done;
+      wt += w.target;
+      const m = monthStats(h);
+      md += m.done;
+      mt += m.target;
+    });
+    return {
+      habits: list,
+      overall: pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : 0,
+      wins: list.reduce((s, h) => s + winsOf(h), 0),
+      wd, wt, md, mt,
+      heat: overallHeat(list),
+      months: monthTicks(),
+    };
+  }, [allHabits]);
 
   const heatColors = colors.heat;
 
@@ -62,7 +72,7 @@ export default function Stats() {
             <Txt style={styles.legendText}>More</Txt>
           </View>
         </View>
-        <Heatmap weeks={overallHeat(habits)} months={monthTicks()} />
+        <Heatmap weeks={heat} months={months} />
         <Txt style={styles.heatCaption}>Shade = how many habits you kept that day.</Txt>
       </Neo>
 

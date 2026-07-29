@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { AppState } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -79,6 +79,24 @@ export default function RootLayout() {
   const session = useStore((s) => s.session);
   const userId = session?.user?.id ?? null;
   const dirty = useStore((s) => s.dirty);
+
+  // Signatures of only the fields each effect cares about, so a check-in (which
+  // changes history) doesn't needlessly reschedule notifications or restart GPS.
+  const reminderSig = useMemo(
+    () =>
+      habits
+        .map((h) => `${h.id}:${h.reminder ? 1 : 0}:${h.archived ? 1 : 0}:${h.deleted ? 1 : 0}:${h.scheduleType}:${(h.days || []).join(',')}:${h.start}:${h.name}:${h.place.name}`)
+        .join('|'),
+    [habits]
+  );
+  const autoSig = useMemo(
+    () =>
+      habits
+        .filter((h) => h.autoCheck && !h.archived && !h.deleted)
+        .map((h) => `${h.id}:${h.place.lat},${h.place.lng}:${h.radius}`)
+        .join('|'),
+    [habits]
+  );
   const ready = loaded && hydrated;
 
   // v2: load + watch the auth session (no-op if Supabase isn't configured).
@@ -121,18 +139,19 @@ export default function RootLayout() {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
-  // Keep scheduled reminders in sync with habits + the global toggle.
+  // Reschedule reminders only when a reminder-relevant field changes (not on
+  // every check-in). Reads live habits inside.
   useEffect(() => {
-    if (hydrated) syncReminders(habits, remindersEnabled).catch(() => {});
-  }, [hydrated, habits, remindersEnabled]);
+    if (hydrated) syncReminders(useStore.getState().habits, remindersEnabled).catch(() => {});
+  }, [hydrated, reminderSig, remindersEnabled]);
 
-  // Start/stop the background auto check-in watcher (safe no-op in Expo Go).
+  // Restart the background auto-check watcher only when its spots/config change.
   useEffect(() => {
     if (!hydrated) return;
-    syncAutoCheck(habits)
+    syncAutoCheck(useStore.getState().habits)
       .then((status) => useStore.getState().setAutoStatus(status))
       .catch((e) => useStore.getState().setAutoStatus(`error: ${e?.message ?? e}`));
-  }, [hydrated, habits]);
+  }, [hydrated, autoSig]);
 
   // Live auto check-in while the app is open (marks via the store → UI updates
   // instantly). On resume, also pull in anything the background task wrote.
