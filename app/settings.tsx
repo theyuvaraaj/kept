@@ -6,6 +6,7 @@ import { Txt, Neo, BackButton, ConfirmModal } from '@/components/ui';
 import { colors, fonts, radius } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { GRACE_DAYS } from '@/lib/analytics';
+import { sampleHabits, DEMO_USER } from '@/lib/mockData';
 
 export default function Settings() {
   const router = useRouter();
@@ -13,10 +14,17 @@ export default function Settings() {
   const setRemindersEnabled = useStore((s) => s.setRemindersEnabled);
   const autoStatus = useStore((s) => s.autoStatus);
   const [showReset, setShowReset] = useState(false);
+  const [showSample, setShowSample] = useState(false);
 
   function doReset() {
     setShowReset(false);
     useStore.setState({ habits: [], dirty: true });
+    router.replace('/home');
+  }
+
+  function doLoadSample() {
+    setShowSample(false);
+    useStore.setState({ habits: sampleHabits(), user: DEMO_USER, dirty: true });
     router.replace('/home');
   }
 
@@ -83,12 +91,24 @@ export default function Settings() {
       <Txt variant="label" style={{ marginTop: 22, marginBottom: 10 }}>
         DATA
       </Txt>
-      <Pressable onPress={() => setShowReset(true)} style={styles.resetBtn}>
+      <Pressable onPress={() => setShowSample(true)} style={styles.sampleBtn}>
+        <Txt style={styles.sampleText}>Load sample data (for screenshots)</Txt>
+      </Pressable>
+      <Pressable onPress={() => setShowReset(true)} style={[styles.resetBtn, { marginTop: 10 }]}>
         <Txt style={styles.resetText}>Reset all data</Txt>
       </Pressable>
 
       <Txt style={styles.version}>Kept v1 · SDK 54</Txt>
 
+      <ConfirmModal
+        visible={showSample}
+        title="Load sample data?"
+        message="Replaces your current habits with a curated demo set (6 habits + ~10 months of history) so the screens look full for screenshots. Syncs to your account. Use Reset afterwards to clear it."
+        cancelLabel="Cancel"
+        confirmLabel="Load"
+        onCancel={() => setShowSample(false)}
+        onConfirm={doLoadSample}
+      />
       <ConfirmModal
         visible={showReset}
         title="Reset all data?"
@@ -130,6 +150,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   resetText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.red },
+  sampleBtn: {
+    borderWidth: 2.5,
+    borderColor: colors.ink,
+    borderRadius: radius.md,
+    paddingVertical: 14,
+    alignItems: 'center',
+    backgroundColor: colors.greenSoft,
+  },
+  sampleText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.ink },
   feedbackRow: {
     flexDirection: 'row',
     alignItems: 'center',

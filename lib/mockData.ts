@@ -1,4 +1,4 @@
-import type { Habit, Place, User } from './types';
+import type { DayStatus, Habit, Place, User } from './types';
 import { dateKey } from './analytics';
 
 export const DEMO_USER: User = { name: 'Alex Rivera', email: 'demo@kept.app' };
@@ -11,45 +11,92 @@ export const PLACES: Array<Place & { sub: string }> = [
   { name: 'Dolores Park', sub: 'Park · 0.7 mi', lat: 37.7596, lng: -122.4269 },
 ];
 
-/** Seed ~3 weeks of history, with a few misses, so charts look alive. */
-function seedHistory(missBacks: number[]): Record<string, 'green' | 'red'> {
-  const h: Record<string, 'green' | 'red'> = {};
-  const today = new Date();
-  const miss = new Set(missBacks);
-  for (let back = 20; back >= 1; back--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - back);
-    h[dateKey(d)] = miss.has(back) ? 'red' : 'green';
-  }
-  return h;
-}
-
-function backKey(n: number): string {
+function daysBackKey(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return dateKey(d);
 }
 
-export function demoHabits(): Habit[] {
+// Green on scheduled weekdays over `span` days. Recent `perfect` days are always
+// green (strong current streak); older days hit `greenProb`, leaving realistic
+// gaps that read as the odd missed day on the heatmap.
+function genSpecific(days: number[], span: number, greenProb: number, perfect: number): Record<string, DayStatus> {
+  const h: Record<string, DayStatus> = {};
+  const today = new Date();
+  for (let back = span; back >= 1; back--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - back);
+    if (!days.includes(d.getDay())) continue;
+    if (back <= perfect || Math.random() < greenProb) h[dateKey(d)] = 'green';
+  }
+  return h;
+}
+
+// Count mode: green on a few preferred weekdays each week (~perWeek days/week).
+function genCount(preferred: number[], span: number, greenProb: number, perfect: number): Record<string, DayStatus> {
+  const h: Record<string, DayStatus> = {};
+  const today = new Date();
+  for (let back = span; back >= 1; back--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - back);
+    if (!preferred.includes(d.getDay())) continue;
+    if (back <= perfect || Math.random() < greenProb) h[dateKey(d)] = 'green';
+  }
+  return h;
+}
+
+/** Curated, realistic habits with ~10 months of history — for Play Store
+ *  screenshots (rich stats + a full GitHub-style heatmap). */
+export function sampleHabits(): Habit[] {
   return [
     {
       id: 'h1',
-      name: 'Morning Run',
-      place: { name: 'Riverside Track', lat: 37.7694, lng: -122.4862 },
+      name: 'Morning Gym',
+      place: { name: 'GoldGym - Downtown', lat: 37.7849, lng: -122.4094 },
       scheduleType: 'specific',
-      days: [1, 2, 3, 4, 5],
-      weeklyTarget: 5,
+      days: [1, 3, 5],
+      weeklyTarget: 3,
       start: '06:00',
-      end: '09:00',
+      end: '08:00',
       radius: 120,
       autoCheck: true,
       reminder: true,
-      createdAt: backKey(20),
-      history: seedHistory([3, 9, 15]),
+      createdAt: daysBackKey(300),
+      history: genSpecific([1, 3, 5], 300, 0.9, 24),
     },
     {
       id: 'h2',
-      name: 'Read at Library',
+      name: 'Run near the park',
+      place: { name: 'Dolores Park', lat: 37.7596, lng: -122.4269 },
+      scheduleType: 'specific',
+      days: [1, 2, 3, 4, 5, 6],
+      weeklyTarget: 6,
+      start: '06:30',
+      end: '08:30',
+      radius: 150,
+      autoCheck: true,
+      reminder: true,
+      createdAt: daysBackKey(300),
+      history: genSpecific([1, 2, 3, 4, 5, 6], 300, 0.85, 16),
+    },
+    {
+      id: 'h3',
+      name: 'Work from office',
+      place: { name: 'Market St Office', lat: 37.7898, lng: -122.4013 },
+      scheduleType: 'specific',
+      days: [1, 2, 3, 4, 5],
+      weeklyTarget: 5,
+      start: '09:00',
+      end: '18:00',
+      radius: 140,
+      autoCheck: true,
+      reminder: false,
+      createdAt: daysBackKey(320),
+      history: genSpecific([1, 2, 3, 4, 5], 320, 0.95, 30),
+    },
+    {
+      id: 'h4',
+      name: 'Read at the Library',
       place: { name: 'City Library, 3rd Fl', lat: 37.7788, lng: -122.4159 },
       scheduleType: 'count',
       days: [],
@@ -59,8 +106,43 @@ export function demoHabits(): Habit[] {
       radius: 100,
       autoCheck: false,
       reminder: true,
-      createdAt: backKey(20),
-      history: seedHistory([2, 6, 11]),
+      createdAt: daysBackKey(260),
+      history: genCount([2, 4, 0], 260, 0.88, 12),
+    },
+    {
+      id: 'h5',
+      name: 'Evening Meditation',
+      place: { name: 'Mindful Studio', lat: 37.7671, lng: -122.4256 },
+      scheduleType: 'count',
+      days: [],
+      weeklyTarget: 5,
+      start: '21:00',
+      end: '22:00',
+      radius: 100,
+      autoCheck: false,
+      reminder: true,
+      createdAt: daysBackKey(210),
+      history: genCount([1, 2, 3, 4, 0], 210, 0.82, 10),
+    },
+    {
+      id: 'h6',
+      name: 'Language study',
+      place: { name: 'Blue Bottle Coffee', lat: 37.7765, lng: -122.423 },
+      scheduleType: 'specific',
+      days: [2, 4],
+      weeklyTarget: 2,
+      start: '08:00',
+      end: '09:00',
+      radius: 100,
+      autoCheck: false,
+      reminder: true,
+      createdAt: daysBackKey(180),
+      history: genSpecific([2, 4], 180, 0.8, 14),
     },
   ];
+}
+
+// Initial seed for a fresh install (before sign-in). Same curated set.
+export function demoHabits(): Habit[] {
+  return sampleHabits();
 }
