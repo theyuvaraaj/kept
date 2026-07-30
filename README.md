@@ -1,6 +1,6 @@
 # Kept
 
-A location-based habit tracker. Pick a place, show up, keep the streak — Kept
+A location-based habit tracker. Pick a place, show up, keep the streak - Kept
 checks that you actually got there instead of trusting a tap on the couch.
 
 Built with **Expo (React Native) · expo-router · TypeScript · Supabase**.
@@ -21,21 +21,21 @@ Built with **Expo (React Native) · expo-router · TypeScript · Supabase**.
 
 ## Features
 
-- **Location check-in** — confirms you're within range of a habit's spot (GPS)
+- **Location check-in** - confirms you're within range of a habit's spot (GPS)
   before a day counts.
-- **Auto check-in** — on by default; background geofencing marks a habit when you
+- **Auto check-in** - on by default; background geofencing marks a habit when you
   arrive at the spot, even with the app closed.
-- **Map search** — find a spot by name (Google Places) or drop your current
+- **Map search** - find a spot by name (Google Places) or drop your current
   location.
-- **Two schedules** — specific weekdays, or "any N days a week".
-- **Honest streaks** — count only scheduled days, one grace day, Kept % that
+- **Two schedules** - specific weekdays, or "any N days a week".
+- **Honest streaks** - count only scheduled days, one grace day, Kept % that
   reflects missed days.
-- **Stats** — weekly/monthly summaries + a GitHub-style yearly heatmap.
-- **Reminders** — local notifications in each habit's window (skipped once kept).
-- **Accounts & sync** — email sign-in is required; habits back up and sync across
+- **Stats** - weekly/monthly summaries + a GitHub-style yearly heatmap.
+- **Reminders** - local notifications in each habit's window (skipped once kept).
+- **Accounts & sync** - email sign-in is required; habits back up and sync across
   devices in real time (Supabase), with account deletion. Offline-first: the
   local store is the source of truth and syncs when you're back online.
-- **In-app feedback** — a feedback screen writes straight to Supabase.
+- **In-app feedback** - a feedback screen writes straight to Supabase.
 
 ## Setup
 
@@ -48,7 +48,7 @@ cp .env.example .env                     # fill in the values below
 
 | Var | Purpose |
 | --- | --- |
-| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Cloud sync + auth (required — login is mandatory) |
+| `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Cloud sync + auth (required - login is mandatory) |
 | `EXPO_PUBLIC_GOOGLE_PLACES_KEY` | Map / place search |
 
 Supabase schema: run `supabase/schema.sql` then each `migration-*.sql`
@@ -66,7 +66,7 @@ Background geofencing + auto check-in need a real build (below), not Expo Go.
 
 ## Build & release
 
-Local (no EAS quota — builds on your machine into `builds/`):
+Local (no EAS quota - builds on your machine into `builds/`):
 
 ```bash
 bash scripts/build-apk.sh    # builds/kept-preview-<timestamp>.apk
@@ -80,7 +80,7 @@ eas build --profile production --platform android   # .aab for Play
 eas submit --profile production --platform android
 ```
 
-`.env` isn't read by cloud builds — non-secret `EXPO_PUBLIC_*` values live in
+`.env` isn't read by cloud builds - non-secret `EXPO_PUBLIC_*` values live in
 `eas.json` per profile. See `store-prep/LAUNCH_CHECKLIST.md` for the full path.
 
 ## Assets & store prep
@@ -89,9 +89,9 @@ eas submit --profile production --platform android
   (regenerate: `node scripts/gen-icons.mjs`)
 - **Play feature graphic:** `assets/feature-graphic.png` (1024×500,
   `node scripts/gen-feature-graphic.mjs`)
-- **Screenshots:** `images/` (above) — capture with Settings → Data → *Load
+- **Screenshots:** `images/` (above) - capture with Settings → Data → *Load
   sample data* for full-looking screens.
-- **Store docs:** `store-prep/` — privacy policy, listing copy, Data Safety
+- **Store docs:** `store-prep/` - privacy policy, listing copy, Data Safety
   answers, Play Console fill-ins, launch checklist.
 
 ## Project structure

@@ -1,4 +1,4 @@
--- Kept v2 — Supabase schema. Paste into Supabase Studio → SQL Editor → Run.
+-- Kept v2 - Supabase schema. Paste into Supabase Studio → SQL Editor → Run.
 -- One table: each user's habits, protected by row-level security.
 
 create table if not exists public.habits (

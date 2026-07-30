@@ -1,9 +1,9 @@
-# Kept — launch checklist (Google Play first)
+# Kept - launch checklist (Google Play first)
 
 Ordered. Things only you can do are marked 🫵.
 
 ## 1. Accounts
-- [ ] 🫵 Google Play Console account — $25 one-time — https://play.google.com/console
+- [ ] 🫵 Google Play Console account - $25 one-time - https://play.google.com/console
 - [ ] 🫵 Host the privacy policy at a public URL (free: GitHub Pages / gist) →
       note the URL. Source: `store-prep/PRIVACY_POLICY.md` (edit the email first).
 
@@ -14,12 +14,12 @@ Ordered. Things only you can do are marked 🫵.
   - **B. Ship foreground-only for v1** (recommended for speed) → remove
     `ACCESS_BACKGROUND_LOCATION`; Auto check-in works while app is open; add
     background in v1.1. Trivial review.
-  - (Tell me A or B — B is a ~10-min code change.)
+  - (Tell me A or B - B is a ~10-min code change.)
 
 ## 3. Store listing
 - [ ] Text ready → `store-prep/STORE_LISTING.md` (edit email + policy URL)
 - [ ] 🫵 Feature graphic 1024×500
-- [ ] Screenshots (2–8) — I can help stage; capture Home, Dashboard, Stats,
+- [ ] Screenshots (2–8) - I can help stage; capture Home, Dashboard, Stats,
       Setup, Check-in success
 - [ ] Content rating questionnaire (Everyone)
 - [ ] Data Safety form → answers in `store-prep/DATA_SAFETY_AND_PERMISSIONS.md`

@@ -3,7 +3,7 @@
 Exact answers for the Google Play Console. Kept works locally, but with **optional
 cloud sync** (Supabase) it DOES collect data when a user signs in, and **place
 search** sends queries to OpenStreetMap. Answer as data IS collected.
-**Background location** also triggers extra review — see that section.
+**Background location** also triggers extra review - see that section.
 
 ## Data Safety form
 
@@ -21,14 +21,14 @@ Declare these data types as **collected** (only when the user signs in / searche
 
 Notes for the form:
 - **Data encrypted in transit:** Yes (HTTPS to Supabase / OpenStreetMap).
-- **Users can request deletion:** Yes — in-app **Account → Delete account**
+- **Users can request deletion:** Yes - in-app **Account → Delete account**
   (deletes cloud data) and **Settings → Reset all data** (local).
-- All cloud collection is **optional** — the app is fully usable signed-out with
+- All cloud collection is **optional** - the app is fully usable signed-out with
   no data leaving the device (except place-search queries when used).
 - Third-party processors: **Supabase** (backend/auth/db), **OpenStreetMap
   Nominatim** (geocoding). Neither is used for advertising.
 
-## Permissions — how you'll justify them
+## Permissions - how you'll justify them
 
 | Permission | Why | Notes |
 |---|---|---|
@@ -50,16 +50,16 @@ Google reviews background-location use hard. To publish you must:
 2. **Record a short demo video** (they require it): screen-record enabling Auto
    check-in on a habit and it auto-marking on arrival. Upload/link it in the
    declaration.
-3. **In-app prominent disclosure — DONE.** Enabling "Auto check-in" on a habit
+3. **In-app prominent disclosure - DONE.** Enabling "Auto check-in" on a habit
    now shows a consent dialog *before* any background-location request:
    *"Kept uses your location to automatically check you in when you arrive at
-   this spot — including in the background, even when the app is closed. Your
+   this spot - including in the background, even when the app is closed. Your
    location is used only on your device… never sent anywhere, shared, or used
    for ads."* with **Continue / Not now**. Background permission is only
    requested on **Continue**. Screenshot this dialog for the Play declaration.
 
 **If background location review feels heavy for v1:** you can ship **without**
-`ACCESS_BACKGROUND_LOCATION` — Auto check-in then works only while the app is
+`ACCESS_BACKGROUND_LOCATION` - Auto check-in then works only while the app is
 open/foreground (still useful), and the store review is trivial. Add background
 in a v1.1 update once the base app is live. This is a very common launch
 strategy and I recommend it if you want to ship fast.

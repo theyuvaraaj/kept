@@ -17,7 +17,7 @@ supabase functions deploy delete-account
 ```
 
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically into
-  Edge Functions — you don't set them.
+  Edge Functions - you don't set them.
 - The function only deletes the user identified by the caller's own JWT, so it's
   safe to expose.
 - Deleting the auth user cascades to their `habits` rows (FK `on delete cascade`).

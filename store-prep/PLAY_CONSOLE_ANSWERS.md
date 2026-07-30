@@ -1,4 +1,4 @@
-# Play Console — fill-in answers
+# Play Console - fill-in answers
 
 Copy-paste as you go through the Console. Edit anything that doesn't match reality.
 
@@ -23,15 +23,15 @@ Copy-paste as you go through the Console. Edit anything that doesn't match reali
 - Violence / sexual / profanity / drugs / gambling → **No** to all
 - User-generated content / user interaction / shares location with other users → **No**
   (location is used only to check YOU in; not shared with other users)
-- Personal info collected → your habit data + email (for the account) — answer truthfully;
+- Personal info collected → your habit data + email (for the account) - answer truthfully;
   results in **Everyone / PEGI 3**.
 
 ## Target audience & content
 - Target age group: **18+** (or 13+). NOT designed for children.
 - Appeals to children → **No**
 
-## Data safety (summary — full detail in DATA_SAFETY_AND_PERMISSIONS.md)
-- Collects data → **Yes** (email, location, app activity — all OPTIONAL, only when signed in / searching)
+## Data safety (summary - full detail in DATA_SAFETY_AND_PERMISSIONS.md)
+- Collects data → **Yes** (email, location, app activity - all OPTIONAL, only when signed in / searching)
 - Shares data → **No**
 - Encrypted in transit → **Yes**
 - Users can request deletion → **Yes** (in-app Account → Delete account)
@@ -51,7 +51,7 @@ Foreground + **background** location. Declaration text:
   it auto-marks on arrival).
 
 ## Data deletion (App content → Data deletion)
-- In-app deletion: **Yes** — Account → Delete account (deletes account + cloud data).
+- In-app deletion: **Yes** - Account → Delete account (deletes account + cloud data).
 - Web URL for deletion requests: optional; can reuse the privacy policy URL /
   support email.
 
