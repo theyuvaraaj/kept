@@ -17,7 +17,7 @@ import * as Location from 'expo-location';
 import { colors } from '@/theme/tokens';
 import { useStore } from '@/store/useStore';
 import { syncReminders } from '@/lib/notifications';
-import { syncAutoCheck } from '@/lib/geofence'; // also registers the background task
+import { syncAutoCheck, LOCATION_TASK } from '@/lib/geofence'; // also registers the background task
 import { todayKey } from '@/lib/analytics';
 import { distanceM } from '@/lib/geo';
 import type { Habit } from '@/lib/types';
@@ -183,9 +183,24 @@ export default function RootLayout() {
   // instantly). On resume, also pull in anything the background task wrote.
   useEffect(() => {
     if (!hydrated) return;
-    const tick = () => {
+    const tick = async () => {
       useStore.getState().refreshFromStorage();
       foregroundAutoCheck();
+      // Recover the background watcher when the user just granted "Allow all the
+      // time" in Settings: the autoSig effect won't re-fire (config is unchanged),
+      // so start it here if there are auto habits, the grant is now in, but the
+      // watcher isn't running yet. Cheap in the common case (one hasStarted check).
+      const active = useStore
+        .getState()
+        .habits.filter((h) => h.autoCheck && !h.archived && !h.deleted);
+      if (!active.length) return;
+      const started = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
+      if (started) return;
+      const bg = await Location.getBackgroundPermissionsAsync().catch(() => null);
+      if (bg?.status !== 'granted') return;
+      syncAutoCheck(useStore.getState().habits)
+        .then((status) => useStore.getState().setAutoStatus(status))
+        .catch(() => {});
     };
     tick();
     const sub = AppState.addEventListener('change', (s) => {

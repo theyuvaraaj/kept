@@ -7,14 +7,16 @@ Ordered. Things only you can do are marked 🫵.
 - [ ] 🫵 Host the privacy policy at a public URL (free: GitHub Pages / gist) →
       note the URL. Source: `store-prep/PRIVACY_POLICY.md` (edit the email first).
 
-## 2. Decide background-location scope for v1
-- [ ] 🫵 Choose:
-  - **A. Ship with background Auto check-in** → do the Play location declaration
-    + demo video + add a prominent-disclosure screen. Slower review.
-  - **B. Ship foreground-only for v1** (recommended for speed) → remove
-    `ACCESS_BACKGROUND_LOCATION`; Auto check-in works while app is open; add
-    background in v1.1. Trivial review.
-  - (Tell me A or B - B is a ~10-min code change.)
+## 2. Background-location scope for v1 → DECISION: A (ship with background)
+Auto check-in is the core feature, so v1 ships **with** `ACCESS_BACKGROUND_LOCATION`.
+Slower/stricter review; requires the declaration + demo video below.
+- [x] Prominent in-app disclosure before the background request (setup screen).
+- [x] Android 11+ escalation: if the OS won't grant "Allow all the time" from the
+      dialog, the app shows an "Open Settings" step and starts the watcher on
+      return (setup.tsx + root AppState recovery in _layout.tsx).
+- [ ] 🫵 Record the demo video (see §3 / §Background section).
+- [ ] 🫵 Fill the Play "App content → Location permissions" declaration
+      (text drafted in `DATA_SAFETY_AND_PERMISSIONS.md`).
 
 ## 3. Store listing
 - [ ] Text ready → `store-prep/STORE_LISTING.md` (edit email + policy URL)

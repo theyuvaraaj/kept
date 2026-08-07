@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet, Platform, Linking } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { requestBatteryExemption } from '@/lib/battery';
@@ -41,6 +41,9 @@ export default function Setup() {
   const [picker, setPicker] = useState<'start' | 'end' | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [autoDisclosure, setAutoDisclosure] = useState(false);
+  // Android 11+ won't grant "Allow all the time" from a dialog - this second
+  // modal sends the user to system Settings to finish it.
+  const [bgSettingsPrompt, setBgSettingsPrompt] = useState(false);
   // True when the disclosure was triggered by Save (vs the manual toggle), so
   // granting permission continues the save it interrupted.
   const [pendingSave, setPendingSave] = useState(false);
@@ -113,13 +116,40 @@ export default function Setup() {
     setAuto(true);
     const fg = await Location.requestForegroundPermissionsAsync();
     if (fg.status === 'granted') {
-      await Location.requestBackgroundPermissionsAsync().catch(() => {});
+      const bg = await Location.requestBackgroundPermissionsAsync().catch(() => null);
+      // On Android 11+ (API 30+) the runtime dialog can't grant "Allow all the
+      // time" - the OS forces a trip to Settings. Guide the user there instead
+      // of silently leaving background check-in dead.
+      const needsSettings =
+        bg?.status !== 'granted' && Platform.OS === 'android' && Number(Platform.Version) >= 30;
+      if (needsSettings) {
+        setBgSettingsPrompt(true);
+        return; // finishAuto() runs from the settings modal's handlers
+      }
     }
+    finishAuto();
+  }
+
+  // Battery exemption + continue any save the disclosure interrupted. The
+  // background watcher itself (re)starts from the root AppState effect once the
+  // habit is saved / the grant lands.
+  function finishAuto() {
     requestBatteryExemption();
     if (pendingSave) {
       setPendingSave(false);
       reallySave(true);
     }
+  }
+
+  function openBgSettings() {
+    setBgSettingsPrompt(false);
+    Linking.openSettings().catch(() => {});
+    finishAuto();
+  }
+
+  function skipBgSettings() {
+    setBgSettingsPrompt(false);
+    finishAuto();
   }
 
   // Disclosure declined → auto stays off. If Save triggered it, save anyway
@@ -417,6 +447,17 @@ export default function Setup() {
         confirmLabel="Continue"
         onCancel={cancelDisclosure}
         onConfirm={confirmDisclosure}
+      />
+      <ConfirmModal
+        visible={bgSettingsPrompt}
+        title="One more step"
+        message={
+          'Android needs you to pick "Allow all the time" for auto check-in to work when Kept is closed.\n\nOpen Settings, then choose Permissions - Location - Allow all the time.'
+        }
+        cancelLabel="Not now"
+        confirmLabel="Open Settings"
+        onCancel={skipBgSettings}
+        onConfirm={openBgSettings}
       />
       <ConfirmModal
         visible={confirmDelete}
